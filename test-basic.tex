@@ -20,6 +20,7 @@
 %%   * a table without footnotes;
 %%   * the counter is reset for each table; counter=<counter>;
 %%     reset=false;
+%%   * width=<dimen> (wider than the table, \linewidth based), width=;
 %%   * mode=off: \footnotemark in the table, \footnotetext after it;
 %%   * footnotes of the body text are not affected.
 %%
@@ -145,7 +146,33 @@ reset\TNfootnote{Reset again, a.} \\
 \end{tabular}
 \TNcounter{mpfootnote}{1}
 
-\begin{minipage}{0.6\linewidth}
+\begingroup
+\tablenotessetup{width=8cm}
+\TNwidth{8cm}
+\begin{tabular}{|l|}
+\hline
+width\TNfootnote{A note set in the width given by the key width, wider
+  than the table.} \\
+\hline
+\end{tabular}
+
+\tablenotessetup{width=0.5\linewidth}
+\TNwidth{0.5\linewidth}
+\begin{tabular}{|l|}
+\hline
+half\TNfootnote{A note in half the line width.} \\
+\hline
+\end{tabular}
+
+\tablenotessetup{width=}
+\TNwidth{6cm}
+\begin{tabular*}{6cm}{l}
+reset\TNfootnote{width= measures the table again.} \\
+\end{tabular*}
+\TNwidth{}
+\endgroup
+
+\noindent\begin{minipage}{0.6\linewidth}
 A minipage\TNfootnote[box]{A footnote of the minipage.}.
 \begin{tabular}{|l|}
 \hline

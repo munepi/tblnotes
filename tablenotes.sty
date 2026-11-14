@@ -23,7 +23,8 @@
 %%   texts are collected, together with their marks, while the table is
 %%   typeset, and are put
 %%     mode=table (default)
-%%       below the table, in the width of the table, as the footnotes
+%%       below the table, in the width of the table (or that given by
+%%       the key "width"), as the footnotes
 %%       of a minipage ("table notes"); the marks are made with the
 %%       mpfootnote counter (or the counter given by the key "counter"),
 %%       which is reset for each table;
@@ -98,6 +99,7 @@
 \bool_new:N \l__tablenotes_reset_bool
 \bool_new:N \l__tablenotes_rule_bool
 \tl_new:N   \l__tablenotes_skip_tl
+\tl_new:N   \l__tablenotes_width_tl
 
 %% The footnotes collected in the current table
 \tl_new:N   \g__tablenotes_notes_tl
@@ -113,8 +115,9 @@
 %% the decision is made before the table and used after it)
 \seq_new:N  \g__tablenotes_stack_seq
 \tl_new:N   \l__tablenotes_action_tl
-%% The table (tabular), the width of the table
+%% The table (tabular), the width of the table, that of the notes
 \box_new:N  \l__tablenotes_table_box
+\dim_new:N  \l__tablenotes_table_dim
 \dim_new:N  \l__tablenotes_width_dim
 %% Inside a float: its environment, and whether it is [H]
 \tl_new:N   \l__tablenotes_float_tl
@@ -137,6 +140,7 @@
     rule    .bool_set:N  = \l__tablenotes_rule_bool ,
     rule    .initial:n   = false ,
     skip    .tl_set:N    = \l__tablenotes_skip_tl ,
+    width   .tl_set:N    = \l__tablenotes_width_tl ,
   }
 \ProcessKeyOptions [ tablenotes ]
 
@@ -302,6 +306,25 @@
     \group_end:
   }
 
+%% The table notes below a table of width \l__tablenotes_table_dim:
+%% in the width given by the key "width", or in that of the table.
+%% Their left edge is that of the table; the box is as wide as the
+%% table, so that the place of the table does not change (wider notes
+%% stick out to the right).
+\cs_new_protected:Npn \__tablenotes_notes:
+  {
+    \tl_if_blank:VTF \l__tablenotes_width_tl
+      { \dim_set_eq:NN \l__tablenotes_width_dim \l__tablenotes_table_dim }
+      { \dim_set:Nn \l__tablenotes_width_dim { \l__tablenotes_width_tl } }
+    \hbox_to_wd:nn { \l__tablenotes_table_dim }
+      {
+        \__tablenotes_block:nn
+          { \l__tablenotes_width_dim }
+          { \__tablenotes_replay:N \l__tablenotes_notes_tl }
+        \hss
+      }
+  }
+
 %% Take the collected footnotes out of the global list
 \cs_new_protected:Npn \__tablenotes_take:
   {
@@ -344,18 +367,13 @@
                 \tl_if_empty:NTF \l__tablenotes_notes_tl
                   { \hbox_unpack:N \l__tablenotes_table_box }
                   {
-                    \dim_set:Nn \l__tablenotes_width_dim
+                    \dim_set:Nn \l__tablenotes_table_dim
                       { \box_wd:N \l__tablenotes_table_box }
                     \vbox_top:n
                       {
                         \box_use_drop:N \l__tablenotes_table_box
                         \nointerlineskip
-                        \hbox:n
-                          {
-                            \__tablenotes_block:nn
-                              { \l__tablenotes_width_dim }
-                              { \__tablenotes_replay:N \l__tablenotes_notes_tl }
-                          }
+                        \__tablenotes_notes:
                       }
                   }
               }
@@ -413,6 +431,7 @@
 %% -----------------------------------------------------------------
 %% 6. At the end of longtable (inside its group, before \endlongtable)
 %%    The notes are put below the last row, in the width of the table
+%%    (or that given by the key "width")
 %%    (the column widths in \LT@save@row: those longtable saved in the
 %%    .aux file on the previous run, widened by the head and the foot;
 %%    \hsize on the first run), at the place given by \LTleft and
@@ -441,21 +460,19 @@
 \cs_new_protected:Npn \__tablenotes_lt_notes:
   {
     \__tablenotes_take:
-    \dim_zero:N \l__tablenotes_width_dim
+    \dim_zero:N \l__tablenotes_table_dim
     \cs_if_exist:NT \LT@save@row
       {
         \cs_set:Npn \LT@entry ##1##2
-          { \dim_add:Nn \l__tablenotes_width_dim {##2} }
+          { \dim_add:Nn \l__tablenotes_table_dim {##2} }
         \LT@save@row
       }
-    \dim_compare:nNnT { \l__tablenotes_width_dim } = { \c_zero_dim }
-      { \dim_set:Nn \l__tablenotes_width_dim { \hsize } }
+    \dim_compare:nNnT { \l__tablenotes_table_dim } = { \c_zero_dim }
+      { \dim_set:Nn \l__tablenotes_table_dim { \hsize } }
     \hbox_set_to_wd:Nnn \l__tablenotes_table_box { \hsize }
       {
         \skip_horizontal:N \LTleft
-        \__tablenotes_block:nn
-          { \l__tablenotes_width_dim }
-          { \__tablenotes_replay:N \l__tablenotes_notes_tl }
+        \__tablenotes_notes:
         \skip_horizontal:N \LTright
       }
     \bool_lazy_and:nnTF

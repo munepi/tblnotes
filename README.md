@@ -53,13 +53,14 @@ Copy `tablenotes.sty` to your local TeX tree:
 | `reset` | `true` | Reset the counter of the table notes for each table |
 | `rule` | `false` | Put `\footnoterule` above the table notes |
 | `skip` | (that of a minipage) | The space between the table and the table notes |
+| `width` | (empty: the width of the table) | The width of the table notes; their left edge is that of the table |
 
 ## Errors, warnings and limitations
 
 * threeparttable (and threeparttablex, which loads it) and tablefootnote cannot be loaded with tablenotes, before or after it (error). Note that threeparttable defines an environment named `tablenotes`; this package does not define `\tablenotes`.
 * `mode=page`: the footnote insertions in a float are lost, so the footnotes of a table in a float are put right after the float environment, in the text. If the float moves to another page, they are not on the page of the float, and the package warns (no warning for `[H]` of the float package).
 * The table notes of a `longtable` are put below the last row (below the last foot, if any), as a single block that is not broken across pages.
-* The notes are set in the width of the table: those of a very narrow table are narrow, too.
+* By default the notes are set in the width of the table (the width of its box, including the `\tabcolsep` at both ends unless `@{}` removes it): those of a very narrow table are narrow, too; give `width` for them.
 * `tabularx`, `xltabular`, `tabulary`, tabularray and nicematrix are not supported. Vertical writing (tate) and tagged PDF are outside the scope of this version.
 
 ## Testing
@@ -73,9 +74,9 @@ Copy `tablenotes.sty` to your local TeX tree:
 
 | Test | Engines | What it covers |
 |---|---|---|
-| `test-basic.tex` | pdflatex, xelatex, lualatex (article, ltjsarticle), platex, uplatex | `mode=table`: tables in the text and in a float, `[t]/[c]/[b]`, `\footnote[9]`, `\footnotemark`/`\footnotetext`, nested tables, `tabular*`, `counter`, `reset`, `mode=off` |
+| `test-basic.tex` | pdflatex, xelatex, lualatex (article, ltjsarticle), platex, uplatex | `mode=table`: tables in the text and in a float, `[t]/[c]/[b]`, `\footnote[9]`, `\footnotemark`/`\footnotetext`, nested tables, `tabular*`, `counter`, `reset`, `width`, `mode=off` |
 | `test-page.tex` | same | `mode=page`: tables in the text, in a float `[H]` and in a float that moves |
-| `test-longtable.tex` | same | `longtable` over pages with a head and a foot, `[l]`, p columns, both modes |
+| `test-longtable.tex` | same | `longtable` over pages with a head and a foot, `[l]`, p columns, `width`, both modes |
 | `test-minipage.tex` | same | tables in a `minipage`, a `tcolorbox`, and a `tcolorbox` with `page footnote` (tcbpagefootnote) |
 | `test-hyperref.tex` | pdflatex, xelatex, lualatex, platex, uplatex | the four tests above with hyperref |
 | `test-japanese.tex` | lualatex (ltjbook), platex (jbook), uplatex (ujbook) | a Japanese document |

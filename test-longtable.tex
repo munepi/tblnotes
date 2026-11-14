@@ -13,6 +13,7 @@
 %%     last row, on the last page;
 %%   * a longtable with \endfoot and \endlastfoot: the notes below the
 %%     last foot;
+%%   * width=<dimen>;
 %%   * a footnote in the head (typeset once, its mark repeated on
 %%     every page);
 %%   * a tabular in a cell of a longtable (the longtable collects);
@@ -54,6 +55,18 @@ mark\footnotemark\TNmark{fm}\footnotetext{\TNtext{fm}{table}The text
 left\TNfootnote{A note of a longtable on the left, whose last row
   does not end with \texttt{\string\\}.} & x
 \end{longtable}
+
+\begingroup
+\tablenotessetup{width=10cm}
+\TNwidth{10cm}
+\begin{longtable}{|l|l|}
+\hline
+width\TNfootnote{A note of a longtable in the width given by the key
+  width.} & x \\
+\hline
+\end{longtable}
+\TNwidth{}
+\endgroup
 
 \TNcounter{footnote}{1}
 \TNcounter{mpfootnote}{1}

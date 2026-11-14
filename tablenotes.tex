@@ -121,6 +121,14 @@ environment before the table.
   \key{reset=false}, the numbering goes on from table to table.
 \item[\key{rule=false}] (default) No \cs{footnoterule} above the table
   notes; \key{rule=true} puts it.
+\item[\key{width=}\meta{dimen}] The width of the table notes
+  (\key{mode=table}).  By default (\key{width=} with an empty value),
+  the width of the table is measured: the width of its box, which
+  includes the \cs{tabcolsep} at both ends unless \verb|@{}| removes
+  it.  The left edge of the notes is that of the table, and the table
+  does not move: notes wider than the table stick out to the right.
+  Give it locally before a table, e.g.\
+  \verb|\tablenotessetup{width=\linewidth}|.
 \item[\key{skip=}\meta{glue}] The space between the table and the table
   notes (it sets \cs{skip}\cs{@mpfootins} for them).  By default the
   space of the footnotes of a \texttt{minipage} is used.
@@ -199,7 +207,7 @@ not typeset twice.
   that does not fit on the last page, \texttt{longtable} puts the foot
   on a new page.
 \item The notes are set in the width of the table: those of a very
-  narrow table are narrow, too.
+  narrow table are narrow, too (use \key{width}).
 \item \cs{footnotetext} outside the table for a \cs{footnotemark} in the
   table works with \key{mode=page} only.
 \item Only \texttt{tabular}, \texttt{tabular*} and \texttt{longtable}
@@ -230,7 +238,8 @@ exactly once, with its own mark and anchor, where it is expected
   Test & What it covers\\
   \hline
   \texttt{test-basic.tex}     & \key{mode=table}: \texttt{tabular},
-                                \texttt{tabular*}, nesting, counters\\
+                                \texttt{tabular*}, nesting, counters,
+                                \key{width}\\
   \texttt{test-page.tex}      & \key{mode=page}: in the text, in floats,
                                 the warning\\
   \texttt{test-longtable.tex} & \texttt{longtable} over pages, head and
