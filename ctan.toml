@@ -1,0 +1,48 @@
+# ctan.toml -- metadata for "ctango upload".
+# Keys follow the CTAN submission API: https://ctan.org/help/submit
+# uploader/email are taken from ~/.config/ctango/config.toml or git config.
+
+pkg         = "tablenotes"
+ctanPath    = "/macros/latex/contrib/tablenotes"
+summary     = "Footnotes in tables as table notes or page footnotes"
+description = '''
+<p>
+A <code>\footnote</code> inside a <code>tabular</code> gives its mark,
+but its text is lost.  This package collects the footnotes of the
+outermost <code>tabular</code>, <code>tabular*</code> or
+<code>longtable</code>, together with their marks, and puts them below
+the table, in the width of the table, as table notes numbered afresh
+for each table (<code>mode=table</code>, the default; the counter is
+<code>mpfootnote</code> or one of your own), or at the bottom of the
+page, numbered along with the footnotes of the body text
+(<code>mode=page</code>).  The ordinary <code>\footnote</code>,
+<code>\footnotemark</code> and <code>\footnotetext</code> are used in
+the table.
+</p>
+<p>
+Tables inside a minipage or a tcolorbox are left as they are, and
+hyperref is supported (each footnote text keeps the anchor of its own
+mark).  threeparttable and tablefootnote cannot be loaded with this
+package.
+</p>
+<p>
+Supported formats/engines: <code>pdflatex</code>, <code>xelatex</code>,
+<code>lualatex</code>, <code>platex</code>, <code>uplatex</code>
+(with <code>dvipdfmx</code>).
+</p>
+'''
+author      = ["Munehiro Yamamoto"]
+license     = ["lppl1.3c"]
+topic       = ["footnote", "table"]
+# home        = "https://..."
+bugtracker  = ["https://github.com/munepi/tablenotes/issues"]
+# support     = "https://..."
+repository  = ["https://github.com/munepi/tablenotes"]
+# development = "https://..."
+
+archive     = "tablenotes.zip"  # built by "make ctanzip"
+
+# The version is read from this file (\ProvidesPackage / \ProvidesExplPackage).
+# Add pattern = '...' to use your own regular expression (first group = version).
+[version]
+file        = "tablenotes.sty"
