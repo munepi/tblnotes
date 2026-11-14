@@ -1,0 +1,500 @@
+%%
+%% tablenotes.sty
+%% ==============
+%% Footnotes in tabular and longtable as table notes or page footnotes.
+%%
+%% Copyright (c) 2026 Munehiro Yamamoto <munepixyz@gmail.com>
+%%
+%% This package is licensed under the conditions of the LaTeX Project
+%% Public License, either version 1.3c of this license or (at your
+%% option) any later version.  The latest version of this license is in
+%%   https://www.latex-project.org/lppl.txt
+%%
+%% This work has the LPPL maintenance status `maintained'.
+%% The Current Maintainer of this work is Munehiro Yamamoto.
+%%
+%% Background
+%%   A \footnote inside tabular gives its mark, but its text is lost:
+%%   the insertion is trapped in the box of the table.  longtable puts
+%%   the texts at the bottom of the page.
+%%
+%% What this package does
+%%   In the outermost tabular, tabular* or longtable, the footnote
+%%   texts are collected, together with their marks, while the table is
+%%   typeset, and are put
+%%     mode=table (default)
+%%       below the table, in the width of the table, as the footnotes
+%%       of a minipage ("table notes"); the marks are made with the
+%%       mpfootnote counter (or the counter given by the key "counter"),
+%%       which is reset for each table;
+%%     mode=page
+%%       at the bottom of the page, as ordinary footnotes numbered with
+%%       the footnote counter.
+%%   With hyperref, each footnote text keeps the anchor of its own mark.
+%%   Inside a minipage, a tcolorbox and the like (where \@footnotetext
+%%   is \@mpfootnotetext) the tables are left as they are.
+%%
+%% Limitations
+%%   * The table notes of a longtable are not broken across pages.
+%%   * mode=page: the footnotes of a table in a float are put at the
+%%     end of the float environment in the text; a warning is issued
+%%     unless the float is [H] of the float package.
+%%   * \footnotetext outside the table for a \footnotemark in the table
+%%     is not supported.
+%%   * Vertical writing (tate) and tagged PDF are out of the scope of
+%%     this version.
+%%   * threeparttable (threeparttablex) and tablefootnote cannot be used
+%%     with this package.
+%%
+%% Supported formats/engines: pdfLaTeX, XeLaTeX, LuaLaTeX, pLaTeX and
+%% upLaTeX (+ dvipdfmx).
+%%
+\RequirePackage{expl3}
+\ProvidesExplPackage{tablenotes}
+  {2026/11/14}{1.0}{Footnotes in tables as table notes or page footnotes}
+
+%% -----------------------------------------------------------------
+%% Messages
+%% -----------------------------------------------------------------
+\msg_new:nnnn { tablenotes } { incompatible }
+  { Package~'#1'~cannot~be~used~with~tablenotes. }
+  {
+    tablenotes~collects~\iow_char:N\\footnote~in~tabular~and~longtable~
+    and~puts~the~texts~below~the~table~(mode=table)~or~at~the~bottom~
+    of~the~page~(mode=page).~Write~\iow_char:N\\footnote~in~the~table~
+    as~usual,~and~do~not~load~'#1'.
+  }
+\msg_new:nnnn { tablenotes } { unknown-counter }
+  { Counter~'#1'~is~not~defined. }
+  {
+    The~key~'counter'~of~tablenotes~needs~a~counter~defined~by~
+    \iow_char:N\\newcounter.~'mpfootnote'~is~used~instead.
+  }
+\msg_new:nnn { tablenotes } { float-page }
+  {
+    The~footnotes~of~a~table~in~this~'#1'~are~put~at~the~end~of~the~
+    '#1'~environment~in~the~text.\\
+    They~are~not~on~the~same~page~as~the~float~if~it~moves.
+  }
+
+%% -----------------------------------------------------------------
+%% Incompatible packages
+%% -----------------------------------------------------------------
+\clist_map_inline:nn { threeparttable , tablefootnote }
+  {
+    \@ifpackageloaded {#1}
+      { \msg_error:nnn { tablenotes } { incompatible } {#1} }
+      {
+        \hook_gput_code:nnn { package / #1 / before } { tablenotes }
+          { \msg_error:nnn { tablenotes } { incompatible } {#1} }
+      }
+  }
+
+%% -----------------------------------------------------------------
+%% Variables
+%% -----------------------------------------------------------------
+\tl_new:N   \l__tablenotes_mode_tl
+\tl_new:N   \l__tablenotes_counter_tl
+\bool_new:N \l__tablenotes_reset_bool
+\bool_new:N \l__tablenotes_rule_bool
+\tl_new:N   \l__tablenotes_skip_tl
+
+%% The footnotes collected in the current table
+\tl_new:N   \g__tablenotes_notes_tl
+\tl_new:N   \l__tablenotes_notes_tl
+%% The mark and the anchor of the last mark, kept while the texts are put
+\tl_new:N   \l__tablenotes_mark_tl
+\tl_new:N   \l__tablenotes_href_tl
+%% mode=page: the footnotes put after the current float
+\tl_new:N   \g__tablenotes_deferred_tl
+%% Inside a table that collects the footnotes
+\bool_new:N \l__tablenotes_collecting_bool
+%% For every table, what is done: table, page or none (a stack, since
+%% the decision is made before the table and used after it)
+\seq_new:N  \g__tablenotes_stack_seq
+\tl_new:N   \l__tablenotes_action_tl
+%% The table (tabular), the width of the table
+\box_new:N  \l__tablenotes_table_box
+\dim_new:N  \l__tablenotes_width_dim
+%% Inside a float: its environment, and whether it is [H]
+\tl_new:N   \l__tablenotes_float_tl
+\bool_new:N \l__tablenotes_float_h_bool
+%% Inside the table notes (used by the test suite)
+\bool_new:N \l__tablenotes_block_bool
+
+%% -----------------------------------------------------------------
+%% Keys
+%% -----------------------------------------------------------------
+\keys_define:nn { tablenotes }
+  {
+    mode    .choices:nn  = { table , page , off }
+      { \tl_set_eq:NN \l__tablenotes_mode_tl \l_keys_choice_tl } ,
+    mode    .initial:n   = table ,
+    counter .tl_set:N    = \l__tablenotes_counter_tl ,
+    counter .initial:n   = mpfootnote ,
+    reset   .bool_set:N  = \l__tablenotes_reset_bool ,
+    reset   .initial:n   = true ,
+    rule    .bool_set:N  = \l__tablenotes_rule_bool ,
+    rule    .initial:n   = false ,
+    skip    .tl_set:N    = \l__tablenotes_skip_tl ,
+  }
+\ProcessKeyOptions [ tablenotes ]
+
+\NewDocumentCommand \tablenotessetup { m }
+  { \keys_set:nn { tablenotes } {#1} }
+
+%% -----------------------------------------------------------------
+%% 1. Collect the footnote text together with its mark
+%%    As in tcbpagefootnote: the mark is saved as the string formatted
+%%    by \thempfn (\@thefnmark), and with hyperref the anchor of the
+%%    mark (\Hy@footnote@currentHref), since both are overwritten by
+%%    the next mark.
+%% -----------------------------------------------------------------
+\cs_new_protected:Npn \__tablenotes_collect:n #1
+  {
+    \tl_gput_right:Ne \g__tablenotes_notes_tl
+      {
+        \__tablenotes_note:nnn
+          { \exp_not:o { \@thefnmark } }
+          {
+            \cs_if_exist:NT \Hy@footnote@currentHref
+              { \exp_not:o { \Hy@footnote@currentHref } }
+          }
+          { \exp_not:n {#1} }
+      }
+  }
+
+%% Put one footnote text with the current \@footnotetext: that of a
+%% minipage (mode=table) or that of the text (mode=page)
+\cs_new_protected:Npn \__tablenotes_note:nnn #1#2#3
+  {
+    \tl_gset:Nn \@thefnmark {#1}
+    \cs_if_exist:NT \Hy@footnote@currentHref
+      { \tl_gset:Nn \Hy@footnote@currentHref {#2} }
+    \@footnotetext {#3}
+  }
+
+%% \footnotetext[<num>] and \footnotemark[<num>], with the counter of
+%% the table (\@mpfn).  hyperref sends \footnotetext[<num>] directly to
+%% the original \@footnotetext unless it is \@mpfootnotetext; the
+%% kernel's \footnotemark always uses the footnote counter.
+\cs_new_protected:Npn \__tablenotes_footnotenext:w [#1]
+  {
+    \group_begin:
+      \int_set:cn { c@ \@mpfn } {#1}
+      \unrestored@protected@xdef \@thefnmark { \thempfn }
+    \group_end:
+    \@footnotetext
+  }
+\cs_new_protected:Npn \__tablenotes_footnotemark:
+  {
+    \@ifnextchar [ % ]
+      { \__tablenotes_footnotemark:w }
+      {
+        \stepcounter { \@mpfn }
+        \protected@xdef \@thefnmark { \thempfn }
+        \@footnotemark
+      }
+  }
+\cs_new_protected:Npn \__tablenotes_footnotemark:w [#1]
+  {
+    \group_begin:
+      \int_set:cn { c@ \@mpfn } {#1}
+      \unrestored@protected@xdef \@thefnmark { \thempfn }
+    \group_end:
+    \@footnotemark
+  }
+
+%% -----------------------------------------------------------------
+%% 2. Before the table (outside its group): decide what is done
+%%    none: inside a table that collects, in a minipage and the like,
+%%          mode=off, and longtable with mode=page (longtable puts
+%%          the footnotes at the bottom of the page by itself)
+%%    For tabular with mode=table, the table is put into a box, to put
+%%    the notes below it in its width.
+%% -----------------------------------------------------------------
+\cs_new_protected:Npn \__tablenotes_before:n #1
+  {
+    \bool_lazy_or:nnTF
+      { \l__tablenotes_collecting_bool }
+      { \cs_if_eq_p:NN \@footnotetext \@mpfootnotetext }
+      { \tl_set:Nn \l__tablenotes_action_tl { none } }
+      {
+        \str_case:VnF \l__tablenotes_mode_tl
+          {
+            { table } { \tl_set:Nn \l__tablenotes_action_tl { table } }
+            { page }
+              {
+                \str_if_eq:nnTF {#1} { longtable }
+                  { \tl_set:Nn \l__tablenotes_action_tl { none } }
+                  { \tl_set:Nn \l__tablenotes_action_tl { page } }
+              }
+          }
+          { \tl_set:Nn \l__tablenotes_action_tl { none } }
+      }
+    \seq_gpush:NV \g__tablenotes_stack_seq \l__tablenotes_action_tl
+    \bool_lazy_and:nnT
+      { \str_if_eq_p:Vn \l__tablenotes_action_tl { table } }
+      { ! \str_if_eq_p:nn {#1} { longtable } }
+      {
+        \mode_leave_vertical:
+        \hbox_set:Nw \l__tablenotes_table_box
+      }
+  }
+
+%% -----------------------------------------------------------------
+%% 3. At the beginning of the table (inside its group): switch the
+%%    footnotes to the collection
+%% -----------------------------------------------------------------
+\cs_new_protected:Npn \__tablenotes_begin:
+  {
+    \seq_get:NN \g__tablenotes_stack_seq \l__tablenotes_action_tl
+    \str_if_eq:VnF \l__tablenotes_action_tl { none }
+      {
+        \bool_set_true:N \l__tablenotes_collecting_bool
+        \tl_gclear:N \g__tablenotes_notes_tl
+        \str_if_eq:VnTF \l__tablenotes_action_tl { table }
+          { \__tablenotes_counter: }
+          {
+            \tl_set:Nn \@mpfn { footnote }
+            \cs_set:Npn \thempfn { \thefootnote }
+          }
+        \cs_set_eq:NN \@footnotetext \__tablenotes_collect:n
+        \cs_set_eq:NN \@xfootnotenext \__tablenotes_footnotenext:w
+        %% longtable: \LT@startpbox sets \@footnotetext to \LT@p@ftntext
+        %% in every p column
+        \cs_set_eq:NN \LT@p@ftntext \__tablenotes_collect:n
+      }
+  }
+
+\cs_new_protected:Npn \__tablenotes_counter:
+  {
+    \cs_if_exist:cF { c@ \l__tablenotes_counter_tl }
+      {
+        \msg_error:nnV { tablenotes } { unknown-counter }
+          \l__tablenotes_counter_tl
+        \tl_set:Nn \l__tablenotes_counter_tl { mpfootnote }
+      }
+    \tl_set_eq:NN \@mpfn \l__tablenotes_counter_tl
+    \cs_set:Npe \thempfn { \exp_not:c { the \l__tablenotes_counter_tl } }
+    \bool_if:NT \l__tablenotes_reset_bool
+      { \int_gzero:c { c@ \l__tablenotes_counter_tl } }
+    \cs_set_eq:NN \footnotemark \__tablenotes_footnotemark:
+  }
+
+%% -----------------------------------------------------------------
+%% 4. The table notes: the footnotes of a minipage of width #1
+%% -----------------------------------------------------------------
+\cs_new_protected:Npn \__tablenotes_block:nn #1#2
+  {
+    \group_begin:
+      \bool_set_true:N \l__tablenotes_block_bool
+      \bool_if:NF \l__tablenotes_rule_bool
+        { \cs_set_eq:NN \footnoterule \scan_stop: }
+      \tl_if_empty:NF \l__tablenotes_skip_tl
+        {
+          \tex_skip:D \@mpfootins =
+            \skip_eval:n { \l__tablenotes_skip_tl } \scan_stop:
+        }
+      \begin{minipage}[t]{#1}
+        #2
+      \end{minipage}
+    \group_end:
+  }
+
+%% Take the collected footnotes out of the global list
+\cs_new_protected:Npn \__tablenotes_take:
+  {
+    \tl_set_eq:NN \l__tablenotes_notes_tl \g__tablenotes_notes_tl
+    \tl_gclear:N \g__tablenotes_notes_tl
+  }
+
+%% Put the footnote texts in #1.  The mark and the anchor of the last
+%% mark are restored afterwards: a \footnotetext after the table for a
+%% \footnotemark in it uses them (hyperref).
+\cs_new_protected:Npn \__tablenotes_replay:N #1
+  {
+    \tl_set_eq:NN \l__tablenotes_mark_tl \@thefnmark
+    \cs_if_exist:NT \Hy@footnote@currentHref
+      { \tl_set_eq:NN \l__tablenotes_href_tl \Hy@footnote@currentHref }
+    \tl_use:N #1
+    \tl_gset_eq:NN \@thefnmark \l__tablenotes_mark_tl
+    \cs_if_exist:NT \Hy@footnote@currentHref
+      { \tl_gset_eq:NN \Hy@footnote@currentHref \l__tablenotes_href_tl }
+  }
+
+%% -----------------------------------------------------------------
+%% 5. After tabular (outside its group)
+%%    table: put the notes below the table: \vtop keeps the baseline
+%%           of the table, i.e. its [t], [c] or [b] position.
+%%    page:  put the footnotes here, in the paragraph, from which the
+%%           insertions migrate; in a float, after the float.
+%% -----------------------------------------------------------------
+\cs_new_protected:Npn \__tablenotes_after:n #1
+  {
+    \seq_gpop:NN \g__tablenotes_stack_seq \l__tablenotes_action_tl
+    \str_case:Vn \l__tablenotes_action_tl
+      {
+        { table }
+          {
+            \str_if_eq:nnF {#1} { longtable }
+              {
+                \hbox_set_end:
+                \__tablenotes_take:
+                \tl_if_empty:NTF \l__tablenotes_notes_tl
+                  { \hbox_unpack:N \l__tablenotes_table_box }
+                  {
+                    \dim_set:Nn \l__tablenotes_width_dim
+                      { \box_wd:N \l__tablenotes_table_box }
+                    \vbox_top:n
+                      {
+                        \box_use_drop:N \l__tablenotes_table_box
+                        \nointerlineskip
+                        \hbox:n
+                          {
+                            \__tablenotes_block:nn
+                              { \l__tablenotes_width_dim }
+                              { \__tablenotes_replay:N \l__tablenotes_notes_tl }
+                          }
+                      }
+                  }
+              }
+          }
+        { page }
+          {
+            \__tablenotes_take:
+            \tl_if_empty:NF \l__tablenotes_notes_tl
+              {
+                \tl_if_empty:NTF \l__tablenotes_float_tl
+                  { \__tablenotes_replay:N \l__tablenotes_notes_tl }
+                  { \__tablenotes_defer: }
+              }
+          }
+      }
+  }
+
+\cs_generate_variant:Nn \hook_gput_next_code:nn { ee }
+%% mode=page in a float: the insertions in the float box are lost, so
+%% the footnotes are put after the float environment
+\cs_new_protected:Npn \__tablenotes_defer:
+  {
+    \tl_if_empty:NT \g__tablenotes_deferred_tl
+      {
+        \bool_if:NF \l__tablenotes_float_h_bool
+          {
+            \msg_warning:nnV { tablenotes } { float-page }
+              \l__tablenotes_float_tl
+          }
+        \hook_gput_next_code:ee
+          { env / \l__tablenotes_float_tl / after }
+          { \exp_not:N \__tablenotes_flush_deferred: }
+      }
+    \tl_gput_right:NV \g__tablenotes_deferred_tl \l__tablenotes_notes_tl
+  }
+\cs_new_protected:Npn \__tablenotes_flush_deferred:
+  {
+    \tl_set_eq:NN \l__tablenotes_notes_tl \g__tablenotes_deferred_tl
+    \tl_gclear:N \g__tablenotes_deferred_tl
+    \__tablenotes_replay:N \l__tablenotes_notes_tl
+  }
+
+%% Record the float (environment and [H]) in its box
+\cs_new_protected:Npn \__tablenotes_float_begin:
+  {
+    \tl_set_eq:NN \l__tablenotes_float_tl \@currenvir
+    \bool_set_false:N \l__tablenotes_float_h_bool
+    \cs_if_exist:NT \float@box
+      {
+        \token_if_eq_meaning:NNT \@currbox \float@box
+          { \bool_set_true:N \l__tablenotes_float_h_bool }
+      }
+  }
+
+%% -----------------------------------------------------------------
+%% 6. At the end of longtable (inside its group, before \endlongtable)
+%%    The notes are put below the last row, in the width of the table
+%%    (the column widths in \LT@save@row: those longtable saved in the
+%%    .aux file on the previous run, widened by the head and the foot;
+%%    \hsize on the first run), at the place given by \LTleft and
+%%    \LTright.
+%%    With a foot (\endfoot or \endlastfoot), they are added to the
+%%    last foot, whose height longtable checks on the last page.
+%%    The hook code starts with \crcr \noalign: after the \cr of the
+%%    last row, TeX looks for \noalign by expanding \end{longtable},
+%%    and an unexpandable command there would start a new (empty) row.
+%%    \crcr is what \endlongtable starts with anyway.
+%% -----------------------------------------------------------------
+\cs_new:Npn \__tablenotes_lt_crcr:
+  {
+    \cs_if_exist:NTF \tbl_crcr:n
+      { \tbl_crcr:n { endlongtable } }
+      { \crcr }
+  }
+\cs_new_protected:Npn \__tablenotes_lt_end:
+  {
+    \seq_get:NN \g__tablenotes_stack_seq \l__tablenotes_action_tl
+    \bool_lazy_and:nnT
+      { \str_if_eq_p:Vn \l__tablenotes_action_tl { table } }
+      { ! \tl_if_empty_p:N \g__tablenotes_notes_tl }
+      { \__tablenotes_lt_notes: }
+  }
+\cs_new_protected:Npn \__tablenotes_lt_notes:
+  {
+    \__tablenotes_take:
+    \dim_zero:N \l__tablenotes_width_dim
+    \cs_if_exist:NT \LT@save@row
+      {
+        \cs_set:Npn \LT@entry ##1##2
+          { \dim_add:Nn \l__tablenotes_width_dim {##2} }
+        \LT@save@row
+      }
+    \dim_compare:nNnT { \l__tablenotes_width_dim } = { \c_zero_dim }
+      { \dim_set:Nn \l__tablenotes_width_dim { \hsize } }
+    \hbox_set_to_wd:Nnn \l__tablenotes_table_box { \hsize }
+      {
+        \skip_horizontal:N \LTleft
+        \__tablenotes_block:nn
+          { \l__tablenotes_width_dim }
+          { \__tablenotes_replay:N \l__tablenotes_notes_tl }
+        \skip_horizontal:N \LTright
+      }
+    \bool_lazy_and:nnTF
+      { \box_if_empty_p:N \LT@foot }
+      { \box_if_empty_p:N \LT@lastfoot }
+      {
+        \penalty \@M
+        \nointerlineskip
+        \box_use_drop:N \l__tablenotes_table_box
+      }
+      { \__tablenotes_lt_lastfoot: }
+  }
+\cs_new_protected:Npn \__tablenotes_lt_lastfoot:
+  {
+    \vbox_gset:Nn \LT@lastfoot
+      {
+        \box_if_empty:NTF \LT@lastfoot
+          { \box_use:N \LT@foot }
+          { \vbox_unpack:N \LT@lastfoot }
+        \nointerlineskip
+        \box_use_drop:N \l__tablenotes_table_box
+      }
+  }
+
+%% -----------------------------------------------------------------
+%% 7. Hooks
+%% -----------------------------------------------------------------
+\clist_map_inline:nn { tabular , tabular* , longtable }
+  {
+    \hook_gput_code:nnn { env / #1 / before } { tablenotes }
+      { \__tablenotes_before:n {#1} }
+    \hook_gput_code:nnn { env / #1 / begin } { tablenotes }
+      { \__tablenotes_begin: }
+    \hook_gput_code:nnn { env / #1 / after } { tablenotes }
+      { \__tablenotes_after:n {#1} }
+  }
+\hook_gput_code:nnn { env / longtable / end } { tablenotes }
+  { \__tablenotes_lt_crcr: \noalign { \__tablenotes_lt_end: } }
+\hook_gput_code:nnn { cmd / @floatboxreset / after } { tablenotes }
+  { \__tablenotes_float_begin: }
+
+\endinput
