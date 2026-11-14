@@ -1,0 +1,264 @@
+%% tablenotes.tex -- documentation for the tablenotes package
+%%
+%% Copyright (c) 2026 Munehiro Yamamoto <munepixyz@gmail.com>
+%% License: LPPL 1.3c or later
+%%
+%% Build: pdflatex tablenotes.tex (three times)
+\documentclass{article}
+\usepackage[margin=28mm]{geometry}
+\usepackage{xcolor}
+\usepackage{longtable,float}
+\usepackage{tablenotes}
+\usepackage[colorlinks, allcolors=blue!50!black]{hyperref}
+\newcommand*\tnversion{v1.0 (2026/11/14)}
+\newcommand*\cs[1]{\texttt{\char`\\#1}}
+\newcommand*\pkg[1]{\textsf{#1}}
+\newcommand*\key[1]{\texttt{#1}}
+\newcommand*\meta[1]{$\langle$\textit{#1}$\rangle$}
+
+\title{The \pkg{tablenotes} package\\
+  \large Footnotes in tables as table notes or page footnotes}
+\author{Munehiro Yamamoto\\
+  \url{https://github.com/munepi/tablenotes}}
+\date{\tnversion}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+A \cs{footnote} inside a \texttt{tabular} gives its mark, but its text
+is lost: the footnote insertion is trapped in the box of the table.
+\texttt{longtable} puts the texts at the bottom of the page.  What a
+book usually wants is either
+\begin{itemize}
+\item \emph{table notes}: the notes put right below the table, in the
+  width of the table, marked a, b, \dots{} and numbered afresh for
+  each table; or
+\item \emph{page footnotes}: the notes put at the bottom of the page,
+  numbered along with the footnotes of the body text.
+\end{itemize}
+The \pkg{tablenotes} package does both, with the ordinary \cs{footnote}
+in the table: no special command for the mark, and no list of notes to
+write by hand.  In the outermost \texttt{tabular}, \texttt{tabular*} or
+\texttt{longtable}, the footnote texts are collected, together with
+their marks, while the table is typeset, and are put below the table
+(\key{mode=table}, the default) or at the bottom of the page
+(\key{mode=page}).
+
+\begin{table}[ht]
+\centering
+\caption{Table notes (\key{mode=table})}
+\begin{tabular}{lll}
+\hline
+Engine & Output & Note \\
+\hline
+pdf\LaTeX & PDF & \\
+Xe\LaTeX & XDV\footnote{Converted to PDF by xdvipdfmx.} & \\
+Lua\LaTeX & PDF & with Lua\TeX-ja\footnote{For Japanese.} \\
+up\LaTeX & DVI\footnote{Converted to PDF by dvipdfmx.} & \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\tablenotessetup{mode=page}
+\caption{Page footnotes (\key{mode=page})}
+\begin{tabular}{ll}
+\hline
+Mode & Notes \\
+\hline
+\key{table} & below the table\footnote{In the width of the table.} \\
+\key{page}  & at the bottom of the page\footnote{Numbered along with
+  the footnotes of the body text.} \\
+\hline
+\end{tabular}
+\end{table}
+
+\paragraph{Supported formats/engines}
+pdf\LaTeX, Xe\LaTeX, Lua\LaTeX{} (with or without Lua\TeX-ja),
+p\LaTeX{} and up\LaTeX{} (with dvipdfmx).
+
+\section{Usage}
+
+\begin{verbatim}
+\usepackage[<options>]{tablenotes}
+\tablenotessetup{<options>}
+
+\begin{tabular}{ll}
+  Item\footnote{A table note.} & Value \\
+\end{tabular}
+\end{verbatim}
+
+\noindent
+The options are given as package options or with \cs{tablenotessetup},
+which can also be used locally, e.g.\ inside a \texttt{table}
+environment before the table.
+
+\begin{description}
+\item[\key{mode=table}] (default) The footnote texts are put below the
+  table, in the width of the table, as the footnotes of a
+  \texttt{minipage} (\cs{footnotesize}, \cs{@makefntext}).  The marks
+  are made with the counter given by \key{counter} and
+  \cs{the}\meta{counter}.
+\item[\key{mode=page}] The footnote texts are put at the bottom of the
+  page, as ordinary footnotes numbered with the \texttt{footnote}
+  counter.  For a \texttt{longtable}, this is what \texttt{longtable}
+  does by itself.
+\item[\key{mode=off}] The tables are left as they are.
+\item[\key{counter=}\meta{counter}] The counter of the table notes
+  (\key{mode=table}); the default is \texttt{mpfootnote}, as in a
+  \texttt{minipage}.  It must be defined by \cs{newcounter}.  For
+  example:
+\begin{verbatim}
+\newcounter{tblnote}
+\renewcommand\thetblnote{\fnsymbol{tblnote}}
+\tablenotessetup{counter=tblnote}
+\end{verbatim}
+\item[\key{reset=true}] (default) The counter of the table notes is
+  reset to zero at the beginning of each table.  With
+  \key{reset=false}, the numbering goes on from table to table.
+\item[\key{rule=false}] (default) No \cs{footnoterule} above the table
+  notes; \key{rule=true} puts it.
+\item[\key{skip=}\meta{glue}] The space between the table and the table
+  notes (it sets \cs{skip}\cs{@mpfootins} for them).  By default the
+  space of the footnotes of a \texttt{minipage} is used.
+\end{description}
+
+\subsection{What is collected}
+
+\begin{itemize}
+\item \cs{footnote}, \cs{footnote}\texttt{[\meta{number}]},
+  \cs{footnotemark} and \cs{footnotetext} in the table, in any column
+  type (including the \texttt{p} columns of \texttt{longtable}).  With
+  \key{mode=table}, \cs{footnotemark} uses the counter of the table
+  notes.
+\item The footnotes of a table inside the table: the outermost table
+  collects them.
+\item The footnotes in the head of a \texttt{longtable}: the text is
+  collected once, and the mark is repeated on every page.
+\end{itemize}
+Inside a \texttt{minipage}, a \pkg{tcolorbox} and the like, where the
+footnotes are already those of the box, the tables are left as they
+are.  Inside a \pkg{tcolorbox} with the key \key{page footnote} of the
+\pkg{tcbpagefootnote} package, both packages work together.
+
+\subsection{Where the notes go}
+
+\begin{description}
+\item[\texttt{tabular}, \texttt{tabular*} (\key{mode=table})] The table
+  and its notes are put into a \cs{vtop} whose baseline is that of the
+  table: \texttt{[t]}, \texttt{[c]} and \texttt{[b]} and the table in a
+  line of text work as before.
+\item[\texttt{longtable} (\key{mode=table})] The notes are put below
+  the last row, at the place given by \cs{LTleft} and \cs{LTright}, in
+  the width of the table (the column widths \texttt{longtable} saves in
+  the \texttt{.aux} file: run \LaTeX{} again when \texttt{longtable}
+  asks for it).  A page break between the last row and the notes is
+  not allowed.  With \cs{endfoot} or \cs{endlastfoot}, the notes are
+  added below the last foot.
+\item[\texttt{tabular}, \texttt{tabular*} (\key{mode=page})] The
+  footnotes are put right after the table, in the paragraph.  For a
+  table in a float, see section~\ref{sec:limitations}.
+\end{description}
+
+\subsection{hyperref}
+
+With \pkg{hyperref}, each footnote mark links to its own footnote text:
+the anchor of each mark is collected with the text.  The anchor and the
+mark of the last footnote are restored after the texts are put, so that
+a \cs{footnotetext} after the table for a \cs{footnotemark} in it gets
+the right anchor.  The anchors are not duplicated, since the tables are
+not typeset twice.
+
+\section{Errors and warnings}
+
+\begin{description}
+\item[\texttt{Package '<package>' cannot be used with tablenotes.}]
+  \pkg{threeparttable} (and \pkg{threeparttablex}, which loads it) and
+  \pkg{tablefootnote} do the same job by other means and cannot be
+  loaded with \pkg{tablenotes}, before or after it.  Write
+  \cs{footnote} in the table as usual instead.
+\item[\texttt{Counter '<counter>' is not defined.}] The value of
+  \key{counter} is not a counter; \texttt{mpfootnote} is used.
+\item[\texttt{The footnotes of a table in this '<float>' are put \dots}]
+  (warning) See section~\ref{sec:limitations}.
+\end{description}
+
+\section{Limitations}\label{sec:limitations}
+
+\begin{itemize}
+\item \key{mode=page}: the footnote insertions in a float are lost, so
+  the footnotes of a table in a float are put right after the float
+  environment, in the text.  If the float moves to another page, they
+  are not on the page of the float, and the package warns.  No warning
+  is issued for \texttt{[H]} of the \pkg{float} package.
+\item The table notes of a \texttt{longtable} are a single block: they
+  are not broken across pages.  When they are added to a last foot
+  that does not fit on the last page, \texttt{longtable} puts the foot
+  on a new page.
+\item The notes are set in the width of the table: those of a very
+  narrow table are narrow, too.
+\item \cs{footnotetext} outside the table for a \cs{footnotemark} in the
+  table works with \key{mode=page} only.
+\item Only \texttt{tabular}, \texttt{tabular*} and \texttt{longtable}
+  are supported.  \texttt{tabularx}, \texttt{xltabular},
+  \texttt{tabulary} (which typeset the table more than once),
+  \pkg{tabularray} and \pkg{nicematrix} (which have their own notes)
+  are not.
+\item Vertical writing (tate) and tagged PDF (\cs{DocumentMetadata})
+  are outside the scope of this version.
+\end{itemize}
+
+\section{Tests}
+
+\verb|make test| compiles the test files twice with pdf\LaTeX,
+Xe\LaTeX, Lua\LaTeX, p\LaTeX{} and up\LaTeX{} (+ dvipdfmx) and checks
+the log.  For every footnote, \texttt{test-common.tex} records in the
+\texttt{.aux} file at shipout the page and the mark of both the footnote
+mark and the footnote text, where the text is set (in the table notes,
+in the full \cs{columnwidth} of the page, or in a box), its width and,
+with \pkg{hyperref}, the anchors; when the \texttt{.aux} file is read
+back at \verb|\end{document}|, it checks that every text is typeset
+exactly once, with its own mark and anchor, where it is expected
+(\texttt{TN-RESULT OK}).
+
+\begin{center}
+\begin{tabular}{ll}
+  \hline
+  Test & What it covers\\
+  \hline
+  \texttt{test-basic.tex}     & \key{mode=table}: \texttt{tabular},
+                                \texttt{tabular*}, nesting, counters\\
+  \texttt{test-page.tex}      & \key{mode=page}: in the text, in floats,
+                                the warning\\
+  \texttt{test-longtable.tex} & \texttt{longtable} over pages, head and
+                                foot, both modes\\
+  \texttt{test-minipage.tex}  & \texttt{minipage}, \pkg{tcolorbox},
+                                \pkg{tcbpagefootnote}\\
+  \texttt{test-hyperref.tex}  & the tests above with \pkg{hyperref}\\
+  \texttt{test-japanese.tex}  & Japanese classes (ltjbook, jbook,
+                                ujbook)\\
+  \texttt{test-errors.tex}    & the error messages\\
+  \hline
+\end{tabular}
+\end{center}
+
+\section{History}
+
+\begin{description}
+\item[v1.0 (2026/11/14)] First public release.
+\end{description}
+
+\section{License}
+
+This package is licensed under the conditions of the \LaTeX{} Project
+Public License, either version~1.3c of this license or any later
+version.
+
+\medskip
+\noindent
+Copyright \copyright{} 2026 Munehiro Yamamoto
+
+\end{document}
