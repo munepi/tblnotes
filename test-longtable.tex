@@ -1,0 +1,126 @@
+%% test-longtable.tex
+%% ==================
+%% Typesetting test for every engine: longtable.  Run twice (longtable
+%% saves the column widths in the .aux file).
+%%
+%%   pdflatex test-longtable.tex   (twice; or xelatex / lualatex)
+%%   platex  test-longtable.tex (twice) && dvipdfmx test-longtable
+%%
+%% What is covered (mode=table):
+%%   * a short longtable: the notes below it, in its width (l and p
+%%     columns; the last row ends with \\ or not);
+%%   * a longtable over three pages with a head: the notes after the
+%%     last row, on the last page;
+%%   * a longtable with \endfoot and \endlastfoot: the notes below the
+%%     last foot;
+%%   * a footnote in the head (typeset once, its mark repeated on
+%%     every page);
+%%   * a tabular in a cell of a longtable (the longtable collects);
+%% (mode=page):
+%%   * a longtable over two pages: each footnote on the page of its row
+%%     (longtable does it by itself);
+%%   * a tabular in a cell of a longtable.
+%%
+%% test-hyperref.tex runs this file with hyperref.
+%%
+%% What to check:
+%%   * TN-RESULT OK, TN-COUNTER OK, and no error or warning.
+\ifdefined\CLS\else\def\CLS{article}\fi
+\ifdefined\ptexversion\def\CLSOPT{dvipdfmx}\else\def\CLSOPT{}\fi
+\expandafter\documentclass\expandafter[\CLSOPT]{\CLS}
+\usepackage{longtable}
+\usepackage{tablenotes}
+\ifdefined\TNhyperref\usepackage{hyperref}\fi
+\input{test-common}
+\begin{document}
+\section*{longtable, mode=table}
+
+Body text\TNfootnote[page]{A footnote in the body text.}.
+
+\TNwidth{3cm+4cm+4\tabcolsep}% the rules of the kernel's tabular have no width
+\begin{longtable}{|p{3cm}|p{4cm}|}
+\hline
+l\TNfootnote{The first note of a short longtable.} &
+p column\TNfootnote{A note in a p column.} \\
+Optional\footnote[5]{\TNtext{opt}{table}A note numbered 5.}\TNmark{opt} &
+mark\footnotemark\TNmark{fm}\footnotetext{\TNtext{fm}{table}The text
+  for the footnotemark.} \\
+\hline
+\end{longtable}
+\TNwidth{}
+
+\begin{longtable}[l]{|l|l|}
+\hline
+left\TNfootnote{A note of a longtable on the left, whose last row
+  does not end with \texttt{\string\\}.} & x
+\end{longtable}
+
+\TNcounter{footnote}{1}
+\TNcounter{mpfootnote}{1}
+
+\newpage
+\section*{A longtable over three pages}
+
+\begin{longtable}{|l|l|}
+\hline
+Head\TNfootnote{A note in the head (its mark is repeated on every page, and the last one is checked).} & B \\
+\hline
+\endhead
+\TNrows{1}{2}
+R3\TNfootnote[table-later]{A note on the first page.} & x \\
+\TNrows{4}{69}
+R70\TNfootnote[table-later]{A note on the second page.} & x \\
+\TNrows{71}{104}
+R105 & a tabular \begin{tabular}{l}
+inner\TNfootnote{A note of a tabular in the last page.} \\
+\end{tabular} \\
+\hline
+\end{longtable}
+
+\TNcounter{mpfootnote}{4}
+
+\newpage
+\section*{A longtable with a foot}
+
+\begin{longtable}{|l|l|}
+\hline
+A & B \\
+\hline
+\endhead
+\hline
+\multicolumn{2}{|r|}{continued} \\
+\hline
+\endfoot
+\hline
+\multicolumn{2}{|r|}{the last foot} \\
+\hline
+\endlastfoot
+\TNrows{1}{2}
+R3\TNfootnote[table-later]{A note on the first page, below the last
+  foot.} & x \\
+\TNrows{4}{50}
+R51\TNfootnote{A note on the last page, below the last foot.} & x \\
+\TNrows{52}{55}
+\end{longtable}
+
+\newpage
+\section*{longtable, mode=page}
+
+\tablenotessetup{mode=page}
+\begin{longtable}{|l|p{4cm}|}
+\hline
+\TNrows{1}{2}
+R3\TNfootnote[page]{A footnote on the first page.} &
+p\TNfootnote[page]{A footnote in a p column.} \\
+\TNrows{4}{60}
+R61\TNfootnote[page]{A footnote on the second page.} &
+\begin{tabular}{l}
+inner\TNfootnote[page]{A footnote of a tabular in a cell.} \\
+\end{tabular} \\
+\hline
+\end{longtable}
+
+Body text\TNfootnote[page]{The last footnote.}.
+
+\TNcounter{footnote}{6}
+\end{document}

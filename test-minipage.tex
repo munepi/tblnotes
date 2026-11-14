@@ -1,0 +1,69 @@
+%% test-minipage.tex
+%% =================
+%% Typesetting test for every engine: tables in a minipage and in a
+%% tcolorbox are left as they are (the footnotes of the box), and
+%% tablenotes works together with tcbpagefootnote.
+%%
+%%   pdflatex test-minipage.tex   (or xelatex / lualatex)
+%%   platex  test-minipage.tex && dvipdfmx test-minipage
+%%
+%% What is covered:
+%%   * a table in a minipage and in an ordinary tcolorbox: a footnote
+%%     of the box;
+%%   * a table in a tcolorbox with "page footnote" (tcbpagefootnote):
+%%     mode=table: table notes below the table, in the box;
+%%     mode=page: a page footnote after the box.
+%%
+%% What to check:
+%%   * TN-RESULT OK, TN-COUNTER OK, and no error or warning.
+\ifdefined\CLS\else\def\CLS{article}\fi
+\ifdefined\ptexversion\def\CLSOPT{dvipdfmx}\else\def\CLSOPT{}\fi
+\expandafter\documentclass\expandafter[\CLSOPT]{\CLS}
+\usepackage{tcbpagefootnote}
+\usepackage{tablenotes}
+\ifdefined\TNhyperref\usepackage{hyperref}\fi
+\input{test-common}
+\begin{document}
+\section*{Boxes}
+
+Body text\TNfootnote[page]{A footnote in the body text.}.
+
+\begin{minipage}{0.8\linewidth}
+\begin{tabular}{|l|}
+\hline
+minipage\TNfootnote[box]{A footnote of a table in a minipage.} \\
+\hline
+\end{tabular}
+\end{minipage}
+
+\begin{tcolorbox}
+\begin{tabular}{|l|}
+\hline
+tcolorbox\TNfootnote[box]{A footnote of a table in a tcolorbox.} \\
+\hline
+\end{tabular}
+\end{tcolorbox}
+
+\begin{tcolorbox}[page footnote]
+Box text\TNfootnote[page]{A page footnote of the box.}.
+\begin{tabular}{|l|}
+\hline
+table mode\TNfootnote{A table note in a box with page footnote.} \\
+\hline
+\end{tabular}
+\end{tcolorbox}
+
+\begin{tcolorbox}[page footnote]
+\tablenotessetup{mode=page}
+\begin{tabular}{|l|}
+\hline
+page mode\TNfootnote[page]{A page footnote of a table in a box with
+  page footnote.} \\
+\hline
+\end{tabular}
+\end{tcolorbox}
+
+Body text\TNfootnote[page]{The last footnote.}.
+
+\TNcounter{footnote}{4}
+\end{document}

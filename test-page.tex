@@ -1,0 +1,101 @@
+%% test-page.tex
+%% =============
+%% Typesetting test for every engine, mode=page: the footnotes of
+%% tabular and tabular* are page footnotes, numbered along with the
+%% footnotes of the body text.
+%%
+%%   pdflatex test-page.tex   (or xelatex / lualatex)
+%%   platex  test-page.tex && dvipdfmx test-page
+%%
+%% What is covered:
+%%   * a table in the body text, several footnotes, l and p columns;
+%%   * \footnote[<num>], \footnotemark + \footnotetext in the table;
+%%   * a tabular inside a tabular;
+%%   * a table in a float [H] of the float package: no warning;
+%%   * a table in a float [p] that moves to a later page: the
+%%     footnotes are put where the float is in the text, with a
+%%     warning (the only tablenotes warning of this test);
+%%   * mode=page given locally by \tablenotessetup.
+%%
+%% test-hyperref.tex runs this file with hyperref.
+%%
+%% What to check:
+%%   * TN-RESULT OK, TN-COUNTER OK, and exactly one tablenotes warning.
+\ifdefined\CLS\else\def\CLS{article}\fi
+\ifdefined\ptexversion\def\CLSOPT{dvipdfmx}\else\def\CLSOPT{}\fi
+\expandafter\documentclass\expandafter[\CLSOPT]{\CLS}
+\usepackage{float}
+\usepackage[mode=page]{tablenotes}
+\ifdefined\TNhyperref\usepackage{hyperref}\fi
+\input{test-common}
+\begin{document}
+\section*{Tables in the body text}
+
+Body text\TNfootnote[page]{A footnote in the body text.}.
+
+Before \begin{tabular}{|l|p{3cm}|}
+\hline
+A\TNfootnote[page]{The first footnote of the table.} &
+B\TNfootnote[page]{The second footnote of the table, in a p column.} \\
+Optional\footnote[9]{\TNtext{opt}{page}A footnote numbered
+9.}\TNmark{opt} &
+mark\footnotemark\TNmark{fm} \\
+\hline
+\end{tabular}\footnotetext{\TNtext{fm}{page}The text for the
+footnotemark, outside the table.} after.
+
+\begin{tabular*}{8cm}{@{\extracolsep{\fill}}ll@{}}
+outer\TNfootnote[page]{A footnote of the outer table.} &
+\begin{tabular}{l}
+inner\TNfootnote[page]{A footnote of the inner table.} \\
+\end{tabular} \\
+\end{tabular*}
+
+\TNcounter{footnote}{6}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|}
+\hline
+H float\TNfootnote[page]{A footnote of a table in a float [H].} \\
+\hline
+\end{tabular}
+\caption{A float [H]}
+\end{table}
+
+\begin{table}[p]
+\centering
+\begin{tabular}{|l|}
+\hline
+p float\TNfootnote[page-earlier]{A footnote of a table in a float [p]: put
+  where the float is in the text, with a warning.} \\
+\hline
+\end{tabular}
+\caption{A float [p]}
+\end{table}
+
+Body text after the floats\TNfootnote[page]{The numbering goes on.}.
+
+\TNcounter{footnote}{9}
+
+\newpage
+\section*{Switching the mode}
+
+\begingroup
+\tablenotessetup{mode=table}
+\begin{tabular}{|l|}
+\hline
+table mode\TNfootnote{A table note.} \\
+\hline
+\end{tabular}
+\endgroup
+
+\begin{tabular}{|l|}
+\hline
+page mode again\TNfootnote[page]{A page footnote again.} \\
+\hline
+\end{tabular}
+
+\TNcounter{footnote}{10}
+\TNcounter{mpfootnote}{1}
+\end{document}

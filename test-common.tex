@@ -1,0 +1,271 @@
+%% test-common.tex
+%% ===============
+%% Helpers shared by the test files; \input this file after
+%% \usepackage{tablenotes}.
+%%
+%% \TNfootnote[<kind>]{<text>}
+%%   \footnote{<text>} with a check of where its text is typeset.
+%%   <kind> (default: table) is one of
+%%     table        in the table notes, on the page of its mark;
+%%     table-later  in the table notes, on a later page than its mark
+%%                  (a longtable broken across pages);
+%%     page         a page footnote on the page of its mark;
+%%     page-later   a page footnote on a later page than its mark;
+%%     page-earlier a page footnote on an earlier page than its mark
+%%                  (mode=page: a float that moved to a later page);
+%%     box          a footnote of a minipage or a box, on the page of
+%%                  its mark.
+%% \TNmark{<id>} and \TNtext{<id>}{<kind>}
+%%   The two halves of \TNfootnote, for \footnote[<num>],
+%%   \footnotemark and \footnotetext: put \TNmark right after the mark
+%%   and \TNtext at the beginning of the text.  <id> is any name that
+%%   is not a number (numbers are used by \TNfootnote).
+%% \TNwidth{<dimen>}
+%%   The table notes of the following marks are set in this width
+%%   (\TNwidth{} to stop checking the width).
+%% \TNcounter{<counter>}{<value>}
+%%   Check the value of <counter> at this point.
+%%
+%% For each mark and each text, the page, the mark (\@thefnmark) and,
+%% for a text, where it is set are written to the .aux file at
+%% shipout: T (in the table notes of tablenotes), P (in the full
+%% \columnwidth of the page, outside the table notes) or B (elsewhere:
+%% a minipage or a box).  When the .aux file is read back at
+%% \end{document}, every mark is checked:
+%%   * its text is typeset exactly once, with the same mark;
+%%   * the text is where <kind> says, in the width given by \TNwidth;
+%%   * with hyperref, the anchor at the text is that of the mark.
+%% Logs "TN-NOTE NG: ..." for each failure, then "TN-RESULT OK (<n>
+%% notes)" or "TN-RESULT NG".  Two runs are needed for longtable
+%% (column widths).
+\makeatletter
+\ExplSyntaxOn
+\int_new:N  \g__tn_id_int
+\seq_new:N  \g__tn_ids_seq
+\bool_new:N \g__tn_ng_bool
+\dim_new:N  \g__tn_colwd_dim
+\tl_new:N   \g__tn_width_tl
+\tl_new:N   \l__tn_tmp_tl
+\AddToHook { begindocument/end }
+  { \dim_gset:Nn \g__tn_colwd_dim { \columnwidth } }
+
+\cs_new_protected:Npn \__tn_ng:n #1
+  {
+    \bool_gset_true:N \g__tn_ng_bool
+    \iow_term:e { TN-NOTE~NG:~#1 }
+  }
+
+%% Write to the .aux file at shipout; #1 is frozen now except \thepage
+\cs_new_protected:Npn \__tn_shipout:n #1
+  {
+    \tl_set:Ne \l__tn_tmp_tl {#1}
+    \exp_args:NNV \iow_shipout_e:Nn \@auxout \l__tn_tmp_tl
+  }
+\cs_new:Npn \__tn_frozen_mark:
+  { \exp_not:N \exp_not:n { \exp_not:o { \@thefnmark } } }
+%% hyperref: the anchor of the mark, and the anchor at the text
+%% (hyperref sets \@currentHref to the anchor it puts there)
+\cs_new:Npn \__tn_frozen_href:N #1
+  {
+    \cs_if_exist:NT \Hy@footnote@currentHref
+      { \exp_not:N \exp_not:n { \exp_not:o {#1} } }
+  }
+\cs_new:Npn \__tn_where:
+  {
+    \bool_if:NTF \l__tablenotes_block_bool
+      { T }
+      {
+        \dim_compare:nNnTF { \hsize } = { \g__tn_colwd_dim }
+          { P } { B }
+      }
+  }
+
+\NewDocumentCommand \TNwidth { m }
+  {
+    \tl_if_blank:nTF {#1}
+      { \tl_gclear:N \g__tn_width_tl }
+      { \tl_gset:Ne \g__tn_width_tl { \dim_eval:n {#1} } }
+  }
+\NewDocumentCommand \TNmark { m }
+  {
+    \seq_gput_right:Nn \g__tn_ids_seq {#1}
+    \__tn_shipout:n
+      {
+        \exp_not:N \exp_not:N \exp_not:N \TN@m
+        {#1} { \exp_not:N \thepage } { \__tn_frozen_mark: }
+        { \g__tn_width_tl }
+        { \__tn_frozen_href:N \Hy@footnote@currentHref }
+      }
+  }
+\NewDocumentCommand \TNtext { m m }
+  {
+    \__tn_shipout:n
+      {
+        \exp_not:N \exp_not:N \exp_not:N \TN@t
+        {#1} {#2} { \exp_not:N \thepage } { \__tn_frozen_mark: }
+        { \__tn_where: } { \dim_use:N \hsize }
+        { \__tn_frozen_href:N \@currentHref }
+      }
+  }
+\NewDocumentCommand \TNfootnote { O{table} +m }
+  {
+    \int_gincr:N \g__tn_id_int
+    \exp_args:NV \__tn_footnote:nnn \g__tn_id_int {#1} {#2}
+  }
+\cs_new_protected:Npn \__tn_footnote:nnn #1#2#3
+  { \footnote { \TNtext {#1} {#2} #3 } \TNmark {#1} }
+
+\NewDocumentCommand \TNcounter { m m }
+  {
+    \int_compare:nNnTF { \value {#1} } = {#2}
+      { \iow_term:e { TN-COUNTER~OK:~#1=#2 } }
+      { \__tn_ng:n { counter~#1=\int_use:c { c@#1 },~want~#2 } }
+  }
+
+%% The records in the .aux file are ignored when it is read at
+%% \begin{document} (they come from the previous run)
+\cs_new_eq:NN \TN@m \use_none:nnnnn
+\cs_new_eq:NN \TN@t \use_none:nnnnnnn
+\cs_new_protected:Npn \__tn_record_mark:nnnnn #1#2#3#4#5
+  {
+    \tl_gset:cn { g__tn_mhref_#1_tl } {#5}
+    \tl_gset:cn { g__tn_mpage_#1_tl } {#2}
+    \tl_gset:cn { g__tn_mmark_#1_tl } {#3}
+    \tl_gset:cn { g__tn_mwidth_#1_tl } {#4}
+  }
+\cs_new_protected:Npn \__tn_record_text:nnnnnnn #1#2#3#4#5#6#7
+  {
+    \tl_gset:cn { g__tn_thref_#1_tl } {#7}
+    \int_if_exist:cF { g__tn_tcount_#1_int }
+      { \int_new:c { g__tn_tcount_#1_int } }
+    \int_gincr:c { g__tn_tcount_#1_int }
+    \tl_gset:cn { g__tn_tkind_#1_tl } {#2}
+    \tl_gset:cn { g__tn_tpage_#1_tl } {#3}
+    \tl_gset:cn { g__tn_tmark_#1_tl } {#4}
+    \tl_gset:cn { g__tn_twhere_#1_tl } {#5}
+    \tl_gset:cn { g__tn_twidth_#1_tl } {#6}
+  }
+\AddToHook { enddocument/afterlastpage }
+  {
+    \cs_gset_eq:NN \TN@m \__tn_record_mark:nnnnn
+    \cs_gset_eq:NN \TN@t \__tn_record_text:nnnnnnn
+  }
+\AddToHook { enddocument/afteraux } { \__tn_check: }
+
+\cs_new_protected:Npn \__tn_check:
+  {
+    \seq_map_function:NN \g__tn_ids_seq \__tn_check_one:n
+    \seq_if_empty:NT \g__tn_ids_seq { \__tn_ng:n { no~footnotes } }
+    \bool_if:NTF \g__tn_ng_bool
+      { \iow_term:n { TN-RESULT~NG } }
+      {
+        \iow_term:e
+          { TN-RESULT~OK~(\seq_count:N \g__tn_ids_seq\c_space_tl notes) }
+      }
+  }
+\cs_new_protected:Npn \__tn_check_one:n #1
+  {
+    \tl_if_exist:cTF { g__tn_mpage_#1_tl }
+      {
+        \int_if_exist:cTF { g__tn_tcount_#1_int }
+          {
+            \int_compare:nNnTF { \int_use:c { g__tn_tcount_#1_int } } = { 1 }
+              { \__tn_check_text:n {#1} }
+              {
+                \__tn_ng:n
+                  { #1:~text~typeset~\int_use:c { g__tn_tcount_#1_int }~times }
+              }
+          }
+          { \__tn_ng:n { #1:~text~lost } }
+      }
+      { \__tn_ng:n { #1:~mark~not~shipped~out } }
+  }
+\cs_new_protected:Npn \__tn_check_text:n #1
+  {
+    \tl_set:Ne \l__tn_tmp_tl
+      {
+        #1:~\tl_use:c { g__tn_tkind_#1_tl },~
+        mark~\tl_to_str:v { g__tn_mmark_#1_tl }~
+        on~p.\tl_use:c { g__tn_mpage_#1_tl },~
+        text~\tl_to_str:v { g__tn_tmark_#1_tl }~
+        on~p.\tl_use:c { g__tn_tpage_#1_tl }~
+        (\tl_use:c { g__tn_twhere_#1_tl }~
+         \tl_use:c { g__tn_twidth_#1_tl }
+         \tl_if_empty:cF { g__tn_mwidth_#1_tl }
+           { ,~want~\tl_use:c { g__tn_mwidth_#1_tl } })
+        \tl_if_empty:cF { g__tn_mhref_#1_tl }
+          {
+            ,~anchor~\tl_use:c { g__tn_mhref_#1_tl }~
+            ->~\tl_use:c { g__tn_thref_#1_tl }
+          }
+      }
+    \bool_if:nTF
+      {
+        \tl_if_eq_p:cc { g__tn_mmark_#1_tl } { g__tn_tmark_#1_tl }
+        && \__tn_place_p:n {#1}
+        && \__tn_width_p:n {#1}
+        && \tl_if_eq_p:cc { g__tn_mhref_#1_tl } { g__tn_thref_#1_tl }
+      }
+      { \iow_term:e { TN-NOTE~OK:~\l__tn_tmp_tl } }
+      { \__tn_ng:n { \l__tn_tmp_tl } }
+  }
+%% #1: id, #2: the code of the place, #3: the relation of the pages
+\cs_new:Npn \__tn_is:nnN #1#2#3
+  {
+    \str_if_eq_p:ee { \tl_use:c { g__tn_twhere_#1_tl } } {#2}
+    && \int_compare_p:nNn { \tl_use:c { g__tn_tpage_#1_tl } }
+         #3 { \tl_use:c { g__tn_mpage_#1_tl } }
+  }
+\prg_new_conditional:Npnn \__tn_place:n #1 { p }
+  {
+    \str_case_e:nnF { \tl_use:c { g__tn_tkind_#1_tl } }
+      {
+        { table }
+          { \bool_if:nTF { \__tn_is:nnN {#1} { T } = } { \prg_return_true: } { \prg_return_false: } }
+        { table-later }
+          { \bool_if:nTF { \__tn_is:nnN {#1} { T } > } { \prg_return_true: } { \prg_return_false: } }
+        { page }
+          { \bool_if:nTF { \__tn_is:nnN {#1} { P } = } { \prg_return_true: } { \prg_return_false: } }
+        { page-later }
+          { \bool_if:nTF { \__tn_is:nnN {#1} { P } > } { \prg_return_true: } { \prg_return_false: } }
+        { page-earlier }
+          { \bool_if:nTF { \__tn_is:nnN {#1} { P } < } { \prg_return_true: } { \prg_return_false: } }
+        { box }
+          { \bool_if:nTF { \__tn_is:nnN {#1} { B } = } { \prg_return_true: } { \prg_return_false: } }
+      }
+      { \prg_return_false: }
+  }
+\prg_new_conditional:Npnn \__tn_width:n #1 { p }
+  {
+    \tl_if_empty:cTF { g__tn_mwidth_#1_tl }
+      { \prg_return_true: }
+      {
+        \dim_compare:nNnTF
+          { \dim_abs:n { \tl_use:c { g__tn_twidth_#1_tl }
+                         - \tl_use:c { g__tn_mwidth_#1_tl } } }
+          < { 0.01pt }
+          { \prg_return_true: } { \prg_return_false: }
+      }
+  }
+\ExplSyntaxOff
+
+%% \TNfiller{<n>}: a paragraph of <n> filler sentences
+\newcommand\TN@filler{%
+  This is a filler sentence of plain English text for the test. }
+\newcommand\TNfiller[1]{%
+  \count@=0
+  \loop\advance\count@ by 1 \TN@filler\ifnum\count@<#1 \repeat\par}
+%% \TNrows{<from>}{<to>}: rows "R<n> & x \\" of a two-column table
+\newcount\TN@row
+\newcommand\TNrows[2]{%
+  \global\TN@row=#1\relax
+  \TN@rows{#2}}
+\newcommand\TN@rows[1]{%
+  \ifnum\TN@row>#1\relax
+    \expandafter\@gobble
+  \else
+    \expandafter\@firstofone
+  \fi
+  {R\the\TN@row & x \\ \noalign{\global\advance\TN@row\@ne}\TN@rows{#1}}}
+\makeatother
+\endinput

@@ -1,0 +1,18 @@
+%% test-hyperref.tex
+%% =================
+%% test-basic.tex, test-page.tex or test-longtable.tex (\TNfile, default
+%% test-basic) with hyperref: each footnote text gets the anchor of its
+%% own mark.
+%%
+%%   pdflatex -jobname=test-hyperref "\def\TNfile{test-page}\input test-hyperref"
+%%   platex  test-hyperref.tex && dvipdfmx test-hyperref
+%%
+%% What to check:
+%%   * TN-RESULT OK, TN-COUNTER OK, and the warnings of the test file.
+%%   * In the log and the terminal output (including that of
+%%     (x)dvipdfmx), no warning on a duplicate destination
+%%     (Hfootnote.<n>) or on a destination that does not exist.
+%%   * In the PDF, each footnote mark links to its own footnote text.
+\ifdefined\TNfile\else\def\TNfile{test-basic}\fi
+\def\TNhyperref{1}
+\input{\TNfile}

@@ -1,0 +1,167 @@
+%% test-basic.tex
+%% ==============
+%% Typesetting test for every engine, mode=table (default): the
+%% footnotes of tabular and tabular* are table notes below the table,
+%% in the width of the table.
+%%
+%%   pdflatex test-basic.tex   (or xelatex / lualatex)
+%%   platex  test-basic.tex && dvipdfmx test-basic
+%%   uplatex -jobname=test-basic "\def\CLS{ujarticle}\input test-basic"
+%% The class is article by default; set \CLS for another one (jarticle,
+%% ujarticle, ltjsarticle, ...).  With pTeX the class option dvipdfmx
+%% is given.
+%%
+%% What is covered:
+%%   * a table in the body text, [t]/[c]/[b], and in a table float;
+%%   * several footnotes, in l and p columns;
+%%   * \footnote[<num>], \footnotemark + \footnotetext in the table;
+%%   * a tabular inside a tabular (the outer one collects);
+%%   * tabular* (the width of the notes is the given width);
+%%   * a table without footnotes;
+%%   * the counter is reset for each table; counter=<counter>;
+%%     reset=false;
+%%   * mode=off: \footnotemark in the table, \footnotetext after it;
+%%   * footnotes of the body text are not affected.
+%%
+%% test-hyperref.tex runs this file with hyperref.
+%%
+%% What to check:
+%%   * TN-RESULT OK, TN-COUNTER OK, and no error or warning.
+\ifdefined\CLS\else\def\CLS{article}\fi
+\ifdefined\ptexversion\def\CLSOPT{dvipdfmx}\else\def\CLSOPT{}\fi
+\expandafter\documentclass\expandafter[\CLSOPT]{\CLS}
+\usepackage{tablenotes}
+\ifdefined\TNhyperref\usepackage{hyperref}\fi
+\input{test-common}
+\newcounter{tblnote}
+\renewcommand\thetblnote{\fnsymbol{tblnote}}
+\begin{document}
+\section*{Tables in the body text}
+
+Body text\TNfootnote[page]{A footnote in the body text.}.
+
+Before \begin{tabular}[t]{|l|l|}
+\hline
+A\TNfootnote{The first note of the inline table.} &
+B\TNfootnote{The second note of the inline table.} \\
+\hline
+\end{tabular} between
+\begin{tabular}[b]{|l|}
+\hline
+C\TNfootnote{A note of the [b] table.} \\
+\hline
+\end{tabular} and
+\begin{tabular}{|l|}
+\hline
+D\TNfootnote{A note of the [c] table.} \\
+\hline
+\end{tabular} after.
+
+\TNcounter{footnote}{1}
+
+\begin{table}[ht]
+\centering
+\caption{A table float}
+\TNwidth{3cm+4cm+4\tabcolsep}
+\begin{tabular}{p{3cm}p{4cm}}
+\hline
+Optional argument\footnote[7]{\TNtext{opt}{table}A note numbered
+7.}\TNmark{opt} & a p column\TNfootnote{A note in a p column.} \\
+footnotemark\footnotemark\TNmark{fm} &
+\footnotetext{\TNtext{fm}{table}The text for the footnotemark.}text \\
+\hline
+\end{tabular}
+\TNwidth{}
+\end{table}
+
+\begin{center}
+\TNwidth{8cm}
+\begin{tabular*}{8cm}{@{\extracolsep{\fill}}ll@{}}
+\hline
+tabular*\TNfootnote{A note of tabular*.} & x \\
+\hline
+\end{tabular*}
+\TNwidth{}
+\end{center}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+outer\TNfootnote{A note of the outer table.} &
+\begin{tabular}{l}
+inner\TNfootnote{A note of the inner table, put with the outer ones.} \\
+\end{tabular} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{tabular}{|l|}
+\hline
+A table without footnotes \\
+\hline
+\end{tabular}
+\end{center}
+
+Body text after the tables\TNfootnote[page]{The numbering of the body
+  text goes on.}.
+
+\TNcounter{footnote}{2}
+
+\newpage
+\section*{Counters}
+
+\begingroup
+\tablenotessetup{counter=tblnote}
+\begin{tabular}{|l|}
+\hline
+own counter\TNfootnote{A note with the counter tblnote.} \\
+own counter\TNfootnote{Another note with the counter tblnote.} \\
+\hline
+\end{tabular}
+\TNcounter{tblnote}{2}
+\TNcounter{mpfootnote}{0}
+\endgroup
+
+\begingroup
+\tablenotessetup{reset=false}
+\begin{tabular}{|l|}
+\hline
+first\TNfootnote{The first note, a.} \\
+\hline
+\end{tabular}
+\begin{tabular}{|l|}
+\hline
+second\TNfootnote{The second note goes on, b.} \\
+\hline
+\end{tabular}
+\TNcounter{mpfootnote}{2}
+\endgroup
+
+\begin{tabular}{|l|}
+\hline
+reset\TNfootnote{Reset again, a.} \\
+\hline
+\end{tabular}
+\TNcounter{mpfootnote}{1}
+
+\begin{minipage}{0.6\linewidth}
+A minipage\TNfootnote[box]{A footnote of the minipage.}.
+\begin{tabular}{|l|}
+\hline
+in a minipage\TNfootnote[box]{A footnote of a table in a minipage:
+  a footnote of the minipage.} \\
+\hline
+\end{tabular}
+\end{minipage}
+
+\tablenotessetup{mode=off}
+Mode off: \begin{tabular}{l}
+off\footnotemark\TNmark{off} \\
+\end{tabular}\footnotetext{\TNtext{off}{page}The text for the
+footnotemark in a table with mode=off, outside the table.}
+
+Body text\TNfootnote[page]{The last footnote.}.
+
+\TNcounter{footnote}{4}
+\end{document}

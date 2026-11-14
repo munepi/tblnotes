@@ -1,0 +1,65 @@
+%% test-japanese.tex
+%% =================
+%% Typesetting test for the Japanese classes: table notes and page
+%% footnotes of tables in Japanese.
+%%
+%%   lualatex test-japanese.tex   (twice)
+%%   platex  -jobname=test-japanese "\def\CLS{jbook}\input test-japanese"
+%%   uplatex -jobname=test-japanese "\def\CLS{ujbook}\input test-japanese"
+%%   (twice, then dvipdfmx test-japanese)
+%% The class is ltjbook by default; with pTeX the class option dvipdfmx
+%% is given.
+%%
+%% What to check:
+%%   * TN-RESULT OK, TN-COUNTER OK, and no error or warning.
+%%   * In the PDF, the notes of tables 1 and 3 are below the tables, in
+%%     their widths, and the footnote of table 2 is at the bottom of
+%%     the page.
+\ifdefined\CLS\else\def\CLS{ltjbook}\fi
+\ifdefined\ptexversion\def\CLSOPT{dvipdfmx}\else\def\CLSOPT{}\fi
+\expandafter\documentclass\expandafter[\CLSOPT,a5paper]{\CLS}
+\usepackage{longtable,float}
+\usepackage{tablenotes}
+\input{test-common}
+\begin{document}
+
+\section*{表中の脚注のテスト}
+
+これは通常の本文です。本文の脚注\TNfootnote[page]{本文中の通常の脚注です。ページ下部に出力されます。}も書けます。
+
+\begin{table}[ht]
+\centering
+\caption{表注（既定）}
+\TNwidth{4cm+5cm+4\tabcolsep}
+\begin{tabular}{|p{4cm}|p{5cm}|}
+\hline
+項目\TNfootnote{表注は表の下に、表の幅で出力されます。} &
+説明\TNfootnote{番号はmpfootnoteカウンタで、表ごとに振り直されます。} \\
+\hline
+\end{tabular}
+\TNwidth{}
+\end{table}
+
+\begin{table}[H]
+\centering
+\tablenotessetup{mode=page}
+\caption{本文の脚注として出力}
+\begin{tabular}{|l|l|}
+\hline
+項目\TNfootnote[page]{mode=pageでは、本文の脚注と通し番号でページ下部に出力されます。} & 説明 \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{longtable}{|l|p{6cm}|}
+\caption{longtableの表注}\\
+\hline
+項目\TNfootnote{longtableの表注も、表の下に出力されます。} &
+長い表\TNfootnote{p列の脚注も回収されます。} \\
+\hline
+\end{longtable}
+
+最後に本文の脚注\TNfootnote[page]{最後の脚注です。}を置きます。
+
+\TNcounter{footnote}{3}
+\end{document}
