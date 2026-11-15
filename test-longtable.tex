@@ -30,7 +30,7 @@
 \ifdefined\ptexversion\def\CLSOPT{dvipdfmx}\else\def\CLSOPT{}\fi
 \expandafter\documentclass\expandafter[\CLSOPT]{\CLS}
 \usepackage{longtable}
-\usepackage{tablenotes}
+\usepackage{tblnotes}
 \ifdefined\TNhyperref\usepackage{hyperref}\fi
 \input{test-common}
 \begin{document}
@@ -57,7 +57,7 @@ left\TNfootnote{A note of a longtable on the left, whose last row
 \end{longtable}
 
 \begingroup
-\tablenotessetup{width=10cm}
+\tblnotessetup{width=10cm}
 \TNwidth{10cm}
 \begin{longtable}{|l|l|}
 \hline
@@ -119,7 +119,7 @@ R51\TNfootnote{A note on the last page, below the last foot.} & x \\
 \newpage
 \section*{longtable, mode=page}
 
-\tablenotessetup{mode=page}
+\tblnotessetup{mode=page}
 \begin{longtable}{|l|p{4cm}|}
 \hline
 \TNrows{1}{2}

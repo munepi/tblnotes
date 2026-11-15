@@ -19,7 +19,7 @@
 \ifdefined\ptexversion\def\CLSOPT{dvipdfmx}\else\def\CLSOPT{}\fi
 \expandafter\documentclass\expandafter[\CLSOPT,a5paper]{\CLS}
 \usepackage{longtable,float}
-\usepackage{tablenotes}
+\usepackage{tblnotes}
 \input{test-common}
 \begin{document}
 
@@ -42,7 +42,7 @@
 
 \begin{table}[H]
 \centering
-\tablenotessetup{mode=page}
+\tblnotessetup{mode=page}
 \caption{本文の脚注として出力}
 \begin{tabular}{|l|l|}
 \hline

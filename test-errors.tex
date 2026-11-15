@@ -1,18 +1,18 @@
 %% test-errors.tex
 %% ===============
-%% The errors of tablenotes.  Run with -interaction=nonstopmode and
+%% The errors of tblnotes.  Run with -interaction=nonstopmode and
 %% select the case by \CASE:
 %%
 %%   pdflatex -interaction=nonstopmode -jobname=test-errors-tpt-before \
 %%     "\def\CASE{tpt-before}\input test-errors"
 %%
 %% Cases and the error message to find in the log:
-%%   tpt-before   threeparttable loaded before tablenotes
-%%   tpt-after    threeparttable loaded after tablenotes
+%%   tpt-before   threeparttable loaded before tblnotes
+%%   tpt-after    threeparttable loaded after tblnotes
 %%   tptx-after   threeparttablex (which loads threeparttable) after
-%%   tfn-before   tablefootnote loaded before tablenotes
-%%   tfn-after    tablefootnote loaded after tablenotes
-%%                "Package '<package>' cannot be used with tablenotes."
+%%   tfn-before   tablefootnote loaded before tblnotes
+%%   tfn-after    tablefootnote loaded after tblnotes
+%%                "Package '<package>' cannot be used with tblnotes."
 %%   counter      counter=<undefined counter>:
 %%                "Counter 'nosuchcounter' is not defined."
 \ifdefined\CASE\else\def\CASE{tpt-before}\fi
@@ -20,12 +20,12 @@
 \def\TNcase#1{\def\TNtmp{#1}\ifx\TNtmp\CASE}
 \TNcase{tpt-before}\usepackage{threeparttable}\fi
 \TNcase{tfn-before}\usepackage{tablefootnote}\fi
-\usepackage{tablenotes}
+\usepackage{tblnotes}
 \TNcase{tpt-after}\usepackage{threeparttable}\fi
 \TNcase{tptx-after}\usepackage{threeparttablex}\fi
 \TNcase{tfn-after}\usepackage{tablefootnote}\fi
 \begin{document}
-\TNcase{counter}\tablenotessetup{counter=nosuchcounter}\fi
+\TNcase{counter}\tblnotessetup{counter=nosuchcounter}\fi
 \begin{tabular}{l}
 A\footnote{A note.} \\
 \end{tabular}

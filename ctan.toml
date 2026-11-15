@@ -2,8 +2,8 @@
 # Keys follow the CTAN submission API: https://ctan.org/help/submit
 # uploader/email are taken from ~/.config/ctango/config.toml or git config.
 
-pkg         = "tablenotes"
-ctanPath    = "/macros/latex/contrib/tablenotes"
+pkg         = "tblnotes"
+ctanPath    = "/macros/latex/contrib/tblnotes"
 summary     = "Footnotes in tables as table notes or page footnotes"
 description = '''
 <p>
@@ -35,14 +35,14 @@ author      = ["Munehiro Yamamoto"]
 license     = ["lppl1.3c"]
 topic       = ["footnote", "table"]
 # home        = "https://..."
-bugtracker  = ["https://github.com/munepi/tablenotes/issues"]
+bugtracker  = ["https://github.com/munepi/tblnotes/issues"]
 # support     = "https://..."
-repository  = ["https://github.com/munepi/tablenotes"]
+repository  = ["https://github.com/munepi/tblnotes"]
 # development = "https://..."
 
-archive     = "tablenotes.zip"  # built by "make ctanzip"
+archive     = "tblnotes.zip"  # built by "make ctanzip"
 
 # The version is read from this file (\ProvidesPackage / \ProvidesExplPackage).
 # Add pattern = '...' to use your own regular expression (first group = version).
 [version]
-file        = "tablenotes.sty"
+file        = "tblnotes.sty"

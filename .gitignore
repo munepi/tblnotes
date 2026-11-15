@@ -8,7 +8,7 @@
 *.term
 test-*.pdf
 make-test.out
-tablenotes.zip
+tblnotes.zip
 *~
 .DS_Store
 NEWS.txt

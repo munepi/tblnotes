@@ -1,14 +1,14 @@
-%% tablenotes.tex -- documentation for the tablenotes package
+%% tblnotes.tex -- documentation for the tblnotes package
 %%
 %% Copyright (c) 2026 Munehiro Yamamoto <munepixyz@gmail.com>
 %% License: LPPL 1.3c or later
 %%
-%% Build: pdflatex tablenotes.tex (three times)
+%% Build: pdflatex tblnotes.tex (three times)
 \documentclass{article}
 \usepackage[margin=28mm]{geometry}
 \usepackage{xcolor}
 \usepackage{longtable,float}
-\usepackage{tablenotes}
+\usepackage{tblnotes}
 \usepackage[colorlinks, allcolors=blue!50!black]{hyperref}
 \newcommand*\tnversion{v1.0 (2026/11/14)}
 \newcommand*\cs[1]{\texttt{\char`\\#1}}
@@ -16,10 +16,10 @@
 \newcommand*\key[1]{\texttt{#1}}
 \newcommand*\meta[1]{$\langle$\textit{#1}$\rangle$}
 
-\title{The \pkg{tablenotes} package\\
+\title{The \pkg{tblnotes} package\\
   \large Footnotes in tables as table notes or page footnotes}
 \author{Munehiro Yamamoto\\
-  \url{https://github.com/munepi/tablenotes}}
+  \url{https://github.com/munepi/tblnotes}}
 \date{\tnversion}
 
 \begin{document}
@@ -38,7 +38,7 @@ book usually wants is either
 \item \emph{page footnotes}: the notes put at the bottom of the page,
   numbered along with the footnotes of the body text.
 \end{itemize}
-The \pkg{tablenotes} package does both, with the ordinary \cs{footnote}
+The \pkg{tblnotes} package does both, with the ordinary \cs{footnote}
 in the table: no special command for the mark, and no list of notes to
 write by hand.  In the outermost \texttt{tabular}, \texttt{tabular*} or
 \texttt{longtable}, the footnote texts are collected, together with
@@ -63,7 +63,7 @@ up\LaTeX & DVI\footnote{Converted to PDF by dvipdfmx.} & \\
 
 \begin{table}[H]
 \centering
-\tablenotessetup{mode=page}
+\tblnotessetup{mode=page}
 \caption{Page footnotes (\key{mode=page})}
 \begin{tabular}{ll}
 \hline
@@ -83,8 +83,8 @@ p\LaTeX{} and up\LaTeX{} (with dvipdfmx).
 \section{Usage}
 
 \begin{verbatim}
-\usepackage[<options>]{tablenotes}
-\tablenotessetup{<options>}
+\usepackage[<options>]{tblnotes}
+\tblnotessetup{<options>}
 
 \begin{tabular}{ll}
   Item\footnote{A table note.} & Value \\
@@ -92,7 +92,7 @@ p\LaTeX{} and up\LaTeX{} (with dvipdfmx).
 \end{verbatim}
 
 \noindent
-The options are given as package options or with \cs{tablenotessetup},
+The options are given as package options or with \cs{tblnotessetup},
 which can also be used locally, e.g.\ inside a \texttt{table}
 environment before the table.
 
@@ -114,7 +114,7 @@ environment before the table.
 \begin{verbatim}
 \newcounter{tblnote}
 \renewcommand\thetblnote{\fnsymbol{tblnote}}
-\tablenotessetup{counter=tblnote}
+\tblnotessetup{counter=tblnote}
 \end{verbatim}
 \item[\key{reset=true}] (default) The counter of the table notes is
   reset to zero at the beginning of each table.  With
@@ -128,7 +128,7 @@ environment before the table.
   it.  The left edge of the notes is that of the table, and the table
   does not move: notes wider than the table stick out to the right.
   Give it locally before a table, e.g.\
-  \verb|\tablenotessetup{width=\linewidth}|.
+  \verb|\tblnotessetup{width=\linewidth}|.
 \item[\key{skip=}\meta{glue}] The space between the table and the table
   notes (it sets \cs{skip}\cs{@mpfootins} for them).  By default the
   space of the footnotes of a \texttt{minipage} is used.
@@ -183,10 +183,11 @@ not typeset twice.
 \section{Errors and warnings}
 
 \begin{description}
-\item[\texttt{Package '<package>' cannot be used with tablenotes.}]
-  \pkg{threeparttable} (and \pkg{threeparttablex}, which loads it) and
-  \pkg{tablefootnote} do the same job by other means and cannot be
-  loaded with \pkg{tablenotes}, before or after it.  Write
+\item[\texttt{Package '<package>' cannot be used with tblnotes.}]
+  The packages \pkg{threeparttable} (also loaded by
+  \pkg{threeparttablex}) and \pkg{tablefootnote} do the same job by
+  other means: they cannot be loaded with \pkg{tblnotes}, before or
+  after it.  Write
   \cs{footnote} in the table as usual instead.
 \item[\texttt{Counter '<counter>' is not defined.}] The value of
   \key{counter} is not a counter; \texttt{mpfootnote} is used.

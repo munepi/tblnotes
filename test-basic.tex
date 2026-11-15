@@ -31,7 +31,7 @@
 \ifdefined\CLS\else\def\CLS{article}\fi
 \ifdefined\ptexversion\def\CLSOPT{dvipdfmx}\else\def\CLSOPT{}\fi
 \expandafter\documentclass\expandafter[\CLSOPT]{\CLS}
-\usepackage{tablenotes}
+\usepackage{tblnotes}
 \ifdefined\TNhyperref\usepackage{hyperref}\fi
 \input{test-common}
 \newcounter{tblnote}
@@ -113,7 +113,7 @@ Body text after the tables\TNfootnote[page]{The numbering of the body
 \section*{Counters}
 
 \begingroup
-\tablenotessetup{counter=tblnote}
+\tblnotessetup{counter=tblnote}
 \begin{tabular}{|l|}
 \hline
 own counter\TNfootnote{A note with the counter tblnote.} \\
@@ -125,7 +125,7 @@ own counter\TNfootnote{Another note with the counter tblnote.} \\
 \endgroup
 
 \begingroup
-\tablenotessetup{reset=false}
+\tblnotessetup{reset=false}
 \begin{tabular}{|l|}
 \hline
 first\TNfootnote{The first note, a.} \\
@@ -147,7 +147,7 @@ reset\TNfootnote{Reset again, a.} \\
 \TNcounter{mpfootnote}{1}
 
 \begingroup
-\tablenotessetup{width=8cm}
+\tblnotessetup{width=8cm}
 \TNwidth{8cm}
 \begin{tabular}{|l|}
 \hline
@@ -156,7 +156,7 @@ width\TNfootnote{A note set in the width given by the key width, wider
 \hline
 \end{tabular}
 
-\tablenotessetup{width=0.5\linewidth}
+\tblnotessetup{width=0.5\linewidth}
 \TNwidth{0.5\linewidth}
 \begin{tabular}{|l|}
 \hline
@@ -164,7 +164,7 @@ half\TNfootnote{A note in half the line width.} \\
 \hline
 \end{tabular}
 
-\tablenotessetup{width=}
+\tblnotessetup{width=}
 \TNwidth{6cm}
 \begin{tabular*}{6cm}{l}
 reset\TNfootnote{width= measures the table again.} \\
@@ -182,7 +182,7 @@ in a minipage\TNfootnote[box]{A footnote of a table in a minipage:
 \end{tabular}
 \end{minipage}
 
-\tablenotessetup{mode=off}
+\tblnotessetup{mode=off}
 Mode off: \begin{tabular}{l}
 off\footnotemark\TNmark{off} \\
 \end{tabular}\footnotetext{\TNtext{off}{page}The text for the

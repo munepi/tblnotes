@@ -2,7 +2,7 @@
 %% =================
 %% Typesetting test for every engine: tables in a minipage and in a
 %% tcolorbox are left as they are (the footnotes of the box), and
-%% tablenotes works together with tcbpagefootnote.
+%% tblnotes works together with tcbpagefootnote.
 %%
 %%   pdflatex test-minipage.tex   (or xelatex / lualatex)
 %%   platex  test-minipage.tex && dvipdfmx test-minipage
@@ -20,7 +20,7 @@
 \ifdefined\ptexversion\def\CLSOPT{dvipdfmx}\else\def\CLSOPT{}\fi
 \expandafter\documentclass\expandafter[\CLSOPT]{\CLS}
 \usepackage{tcbpagefootnote}
-\usepackage{tablenotes}
+\usepackage{tblnotes}
 \ifdefined\TNhyperref\usepackage{hyperref}\fi
 \input{test-common}
 \begin{document}
@@ -54,7 +54,7 @@ table mode\TNfootnote{A table note in a box with page footnote.} \\
 \end{tcolorbox}
 
 \begin{tcolorbox}[page footnote]
-\tablenotessetup{mode=page}
+\tblnotessetup{mode=page}
 \begin{tabular}{|l|}
 \hline
 page mode\TNfootnote[page]{A page footnote of a table in a box with

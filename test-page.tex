@@ -14,18 +14,18 @@
 %%   * a table in a float [H] of the float package: no warning;
 %%   * a table in a float [p] that moves to a later page: the
 %%     footnotes are put where the float is in the text, with a
-%%     warning (the only tablenotes warning of this test);
-%%   * mode=page given locally by \tablenotessetup.
+%%     warning (the only tblnotes warning of this test);
+%%   * mode=page given locally by \tblnotessetup.
 %%
 %% test-hyperref.tex runs this file with hyperref.
 %%
 %% What to check:
-%%   * TN-RESULT OK, TN-COUNTER OK, and exactly one tablenotes warning.
+%%   * TN-RESULT OK, TN-COUNTER OK, and exactly one tblnotes warning.
 \ifdefined\CLS\else\def\CLS{article}\fi
 \ifdefined\ptexversion\def\CLSOPT{dvipdfmx}\else\def\CLSOPT{}\fi
 \expandafter\documentclass\expandafter[\CLSOPT]{\CLS}
 \usepackage{float}
-\usepackage[mode=page]{tablenotes}
+\usepackage[mode=page]{tblnotes}
 \ifdefined\TNhyperref\usepackage{hyperref}\fi
 \input{test-common}
 \begin{document}
@@ -82,7 +82,7 @@ Body text after the floats\TNfootnote[page]{The numbering goes on.}.
 \section*{Switching the mode}
 
 \begingroup
-\tablenotessetup{mode=table}
+\tblnotessetup{mode=table}
 \begin{tabular}{|l|}
 \hline
 table mode\TNfootnote{A table note.} \\

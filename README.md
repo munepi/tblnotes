@@ -1,10 +1,10 @@
-# tablenotes Package
+# tblnotes Package
 
 **LaTeX: Footnotes in tables as table notes or page footnotes**
 
 A `\footnote` inside a `tabular` gives its mark, but its text is lost: the footnote insertion is trapped in the box of the table.
 
-The tablenotes package collects the footnotes of the outermost `tabular`, `tabular*` or `longtable`, together with their marks, while the table is typeset, and puts them
+The tblnotes package collects the footnotes of the outermost `tabular`, `tabular*` or `longtable`, together with their marks, while the table is typeset, and puts them
 
 * `mode=table` (default): below the table, in the width of the table, as *table notes* (the footnotes of a minipage), marked with the `mpfootnote` counter (or a counter of your own) and numbered afresh for each table; or
 * `mode=page`: at the bottom of the page, as ordinary footnotes numbered along with the footnotes of the body text.
@@ -17,8 +17,8 @@ The ordinary `\footnote`, `\footnote[<number>]`, `\footnotemark` and `\footnotet
 
 | File | Description |
 |---|---|
-| `tablenotes.sty` | The package |
-| `tablenotes.tex` / `.pdf` | Documentation |
+| `tblnotes.sty` | The package |
+| `tblnotes.tex` / `.pdf` | Documentation |
 | `test-*.tex` | Test suite (see below) |
 
 ## Requirements
@@ -27,13 +27,13 @@ The ordinary `\footnote`, `\footnote[<number>]`, `\footnotemark` and `\footnotet
 
 ## Installation
 
-Copy `tablenotes.sty` to your local TeX tree:
-`$TEXMF/tex/latex/tablenotes/`
+Copy `tblnotes.sty` to your local TeX tree:
+`$TEXMF/tex/latex/tblnotes/`
 
 ## Usage
 
 ```latex
-\usepackage[mode=table, counter=mpfootnote]{tablenotes}
+\usepackage[mode=table, counter=mpfootnote]{tblnotes}
 
 \begin{table}[ht]
   \centering
@@ -43,7 +43,7 @@ Copy `tablenotes.sty` to your local TeX tree:
   \end{tabular}
 \end{table}
 
-\tablenotessetup{mode=page}  % also locally, e.g. inside a table environment
+\tblnotessetup{mode=page}  % also locally, e.g. inside a table environment
 ```
 
 | Option | Default | Meaning |
@@ -57,7 +57,7 @@ Copy `tablenotes.sty` to your local TeX tree:
 
 ## Errors, warnings and limitations
 
-* threeparttable (and threeparttablex, which loads it) and tablefootnote cannot be loaded with tablenotes, before or after it (error). Note that threeparttable defines an environment named `tablenotes`; this package does not define `\tablenotes`.
+* threeparttable (and threeparttablex, which loads it) and tablefootnote cannot be loaded with tblnotes, before or after it (error).
 * `mode=page`: the footnote insertions in a float are lost, so the footnotes of a table in a float are put right after the float environment, in the text. If the float moves to another page, they are not on the page of the float, and the package warns (no warning for `[H]` of the float package).
 * The table notes of a `longtable` are put below the last row (below the last foot, if any), as a single block that is not broken across pages.
 * By default the notes are set in the width of the table (the width of its box, including the `\tabcolsep` at both ends unless `@{}` removes it): those of a very narrow table are narrow, too; give `width` for them.
@@ -69,7 +69,7 @@ Copy `tablenotes.sty` to your local TeX tree:
 
 * `TN-RESULT OK`: every footnote text is typeset exactly once, with its own mark (and, with hyperref, the anchor of its mark), on the expected page, in the table notes (in the expected width), as a page footnote or as a footnote of a box (recorded at shipout to the `.aux` file and checked when it is read back at `\end{document}`; see `test-common.tex`).
 * `test-hyperref-*`: no warning on a duplicate or missing destination in the log or in the output of the engine and (x)dvipdfmx.
-* `test-page-*`: exactly one tablenotes warning (a float that moves); the other tests: none.
+* `test-page-*`: exactly one tblnotes warning (a float that moves); the other tests: none.
 * `test-errors`: the expected error message.
 
 | Test | Engines | What it covers |
@@ -86,8 +86,8 @@ Copy `tablenotes.sty` to your local TeX tree:
 
 ## Repository
 
-* <https://github.com/munepi/tablenotes>
-* Bug reports: <https://github.com/munepi/tablenotes/issues>
+* <https://github.com/munepi/tblnotes>
+* Bug reports: <https://github.com/munepi/tblnotes/issues>
 
 ## License
 

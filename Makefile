@@ -1,21 +1,21 @@
-TNVER := $(shell awk '/ProvidesExplPackage\{tablenotes\}/{getline; split($$0, a, "[{}]"); print a[4]}' tablenotes.sty)
+TNVER := $(shell awk '/ProvidesExplPackage\{tblnotes\}/{getline; split($$0, a, "[{}]"); print a[4]}' tblnotes.sty)
 
-DOCS := tablenotes.pdf
+DOCS := tblnotes.pdf
 
 .PHONY: ctanzip
-ctanzip: tablenotes.zip ## Archive for CTAN upload
-tablenotes.zip: clean $(DOCS)
-	git archive --format=tar --prefix=tablenotes/ HEAD | gtar -x
+ctanzip: tblnotes.zip ## Archive for CTAN upload
+tblnotes.zip: clean $(DOCS)
+	git archive --format=tar --prefix=tblnotes/ HEAD | gtar -x
 	## remove unpacked files
-	cd tablenotes/ && \
+	cd tblnotes/ && \
 		rm -f .gitignore Makefile ctan.toml
 	## then, now just make archive
-	zip -9 -r tablenotes.zip tablenotes/*
-	rm -rf tablenotes
+	zip -9 -r tblnotes.zip tblnotes/*
+	rm -rf tblnotes
 	@echo finished
 
-.PHONY: tablenotes.pdf
-tablenotes.pdf: tablenotes.tex tablenotes.sty
+.PHONY: tblnotes.pdf
+tblnotes.pdf: tblnotes.tex tblnotes.sty
 	pdflatex -interaction=nonstopmode -halt-on-error $<
 	pdflatex -interaction=nonstopmode -halt-on-error $<
 	pdflatex -interaction=nonstopmode -halt-on-error $<
@@ -26,7 +26,7 @@ tablenotes.pdf: tablenotes.tex tablenotes.sty
 ##  * TN-RESULT OK and no TN-* NG: every footnote text is typeset once,
 ##    with its own mark (and anchor), where it is expected (see
 ##    test-common.tex)
-##  * test-page-* and test-hyperref-page-*: exactly one tablenotes
+##  * test-page-* and test-hyperref-page-*: exactly one tblnotes
 ##    warning (a float that moves); the others: none
 ##  * test-hyperref-*: no warning on a duplicate or missing destination
 ##    in the log or in the output of the engine and (x)dvipdfmx
@@ -83,10 +83,10 @@ test:
 	  if grep -q '^TN-.* NG' $$job.log; then grep '^TN-.* NG' $$job.log; exit 1; fi; \
 	  grep -q '^TN-RESULT OK' $$job.log || \
 	    { echo "NG: no TN-RESULT OK in $$job.log"; exit 1; }; \
-	  nwarn=`grep -c 'tablenotes Warning' $$job.log || true`; \
+	  nwarn=`grep -c 'tblnotes Warning' $$job.log || true`; \
 	  case $$job in test-page-*|test-hyperref-page-*) want=1;; *) want=0;; esac; \
 	  [ $$nwarn -eq $$want ] || \
-	    { echo "NG: $$nwarn tablenotes warning(s) in $$job.log, want $$want"; exit 1; }; \
+	    { echo "NG: $$nwarn tblnotes warning(s) in $$job.log, want $$want"; exit 1; }; \
 	  case $$job in test-hyperref-*) \
 	    if cat $$job.log $$job.term | \
 	      grep -i 'duplicate\|already defined\|does not exist\|unreferenced destination'; then \
@@ -97,14 +97,14 @@ test:
 	  c=$${e%%:*}; msg=$${e#*:}; job=test-errors-$$c; \
 	  echo "== pdflatex $$job"; \
 	  pdflatex -interaction=nonstopmode -jobname=$$job "\def\CASE{$$c}\input test-errors" >$$job.term 2>&1 || true; \
-	  grep -q "^! Package tablenotes Error: .*$$msg" $$job.log || \
+	  grep -q "^! Package tblnotes Error: .*$$msg" $$job.log || \
 	    { echo "NG: no expected error in $$job.log"; exit 1; }; \
 	done; \
 	echo "All tests passed ($(TNVER))"
 
 .PHONY: clean
 clean: ## Clean this repository
-	rm -rf tablenotes.zip tablenotes
+	rm -rf tblnotes.zip tblnotes
 	rm -f *.aux *.log *.out *.toc *.dvi *.xdv *.synctex.gz *.term
 	rm -f test-*.pdf
 	find . -type f -name "*~" -delete

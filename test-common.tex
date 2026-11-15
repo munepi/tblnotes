@@ -1,7 +1,7 @@
 %% test-common.tex
 %% ===============
 %% Helpers shared by the test files; \input this file after
-%% \usepackage{tablenotes}.
+%% \usepackage{tblnotes}.
 %%
 %% \TNfootnote[<kind>]{<text>}
 %%   \footnote{<text>} with a check of where its text is typeset.
@@ -28,7 +28,7 @@
 %%
 %% For each mark and each text, the page, the mark (\@thefnmark) and,
 %% for a text, where it is set are written to the .aux file at
-%% shipout: T (in the table notes of tablenotes), P (in the full
+%% shipout: T (in the table notes of tblnotes), P (in the full
 %% \columnwidth of the page, outside the table notes) or B (elsewhere:
 %% a minipage or a box).  When the .aux file is read back at
 %% \end{document}, every mark is checked:
@@ -72,7 +72,7 @@
   }
 \cs_new:Npn \__tn_where:
   {
-    \bool_if:NTF \l__tablenotes_block_bool
+    \bool_if:NTF \l__tblnotes_block_bool
       { T }
       {
         \dim_compare:nNnTF { \hsize } = { \g__tn_colwd_dim }
