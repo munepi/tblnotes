@@ -1,0 +1,114 @@
+%% test-tagging.tex
+%% ================
+%% Tagged PDF (\DocumentMetadata{tagging=on}) with LuaLaTeX and
+%% pdfLaTeX, with hyperref.  Run twice.
+%%
+%%   lualatex test-tagging.tex   (twice; or pdflatex)
+%%   show-pdf-tags --xml test-tagging.pdf
+%%
+%% What is covered:
+%%   * mode=table: tabular in the text and in a table float, tabular*,
+%%     \footnote[<num>], \footnotemark + \footnotetext in the table;
+%%   * a minipage: the footnotes of a table in it are those of the
+%%     minipage (with tagging, \@footnotetext is not \@mpfootnotetext
+%%     there);
+%%   * longtable, mode=table, over two pages, [l] and with a last foot:
+%%     the notes are put after the table, outside its structure;
+%%   * mode=page: tabular and longtable;
+%%   * footnotes of the body text.
+%%
+%% What to check (make test):
+%%   * no error and no warning of tagpdf or tblnotes;
+%%   * in the structure tree (show-pdf-tags --xml), every footnotemark
+%%     and footnote refer to each other (Ref), and there are as many
+%%     of them as the footnotes of this file (TAGS-FOOTNOTES below).
+%%
+%% TAGS-FOOTNOTES: 14
+\DocumentMetadata{tagging=on, pdfstandard=ua-2, lang=en}
+\documentclass{article}
+\usepackage{longtable}
+\usepackage{tblnotes}
+\usepackage{hyperref}
+\makeatletter
+%% \rows{<from>}{<to>}: rows "R<n> & x \\" (as \TNrows of test-common.tex)
+\newcount\TT@row
+\newcommand\rows[2]{\global\TT@row=#1\relax \TT@rows{#2}}
+\newcommand\TT@rows[1]{%
+  \ifnum\TT@row>#1\relax
+    \expandafter\@gobble
+  \else
+    \expandafter\@firstofone
+  \fi
+  {R\the\TT@row & x \\ \noalign{\global\advance\TT@row\@ne}\TT@rows{#1}}}
+\makeatother
+\begin{document}
+\section{mode=table}
+
+Body text\footnote{A footnote in the body text.}.
+
+Before \begin{tabular}[t]{ll}
+\hline
+A\footnote{The first note of the inline table.} &
+B\footnote{The second note of the inline table.} \\
+Opt\footnote[7]{A note numbered 7.} &
+mark\footnotemark \footnotetext{The text for the footnotemark.} \\
+\hline
+\end{tabular} after.
+
+\begin{table}[ht]
+\centering
+\caption{A table float}
+\begin{tabular*}{8cm}{@{\extracolsep{\fill}}ll@{}}
+\hline
+tabular*\footnote{A note of tabular* in a float.} & x \\
+\hline
+\end{tabular*}
+\end{table}
+
+\noindent\begin{minipage}{0.6\linewidth}
+A minipage\footnote{A footnote of the minipage.}.
+\begin{tabular}{l}
+in a minipage\footnote{A footnote of a table in a minipage.} \\
+\end{tabular}
+\end{minipage}
+
+\section{longtable}
+
+%% No \endhead: with pdfLaTeX, the head repeated on every page gives
+%% "Label `mcid-<n>' multiply defined" without tblnotes, too.
+\begin{longtable}{ll}
+\hline
+R1\footnote{A note on the first page of a longtable.} & x \\
+\rows{2}{60}
+R61\footnote{A note on the second page of a longtable.} & x \\
+\hline
+\end{longtable}
+
+Text after the longtable.
+
+\begin{longtable}[l]{|l|l|}
+\hline
+\multicolumn{2}{|r|}{continued} \\
+\hline
+\endfoot
+\hline
+\multicolumn{2}{|r|}{the last foot} \\
+\hline
+\endlastfoot
+left\footnote{A note of a longtable on the left, with a last foot.} & x \\
+y & z
+\end{longtable}
+
+\section{mode=page}
+
+\tblnotessetup{mode=page}
+\begin{tabular}{l}
+page\footnote{A page footnote of a tabular.} \\
+\end{tabular}
+
+\begin{longtable}{ll}
+page\footnote{A page footnote of a longtable.} & x \\
+\end{longtable}
+
+Body text\footnote{The last footnote.}.
+\end{document}

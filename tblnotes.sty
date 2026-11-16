@@ -33,7 +33,11 @@
 %%       the footnote counter.
 %%   With hyperref, each footnote text keeps the anchor of its own mark.
 %%   Inside a minipage, a tcolorbox and the like (where \@footnotetext
-%%   is \@mpfootnotetext) the tables are left as they are.
+%%   is \@mpfootnotetext, or with tagging, where the plug of the socket
+%%   fntext/process is mp) the tables are left as they are.
+%%   Tagged PDF (\DocumentMetadata{tagging=on}): the footnote marks and
+%%   texts are tagged by the kernel, and refer to each other; the table
+%%   notes of a longtable are put right after the table.
 %%
 %% Limitations
 %%   * The table notes of a longtable are not broken across pages.
@@ -42,8 +46,10 @@
 %%     unless the float is [H] of the float package.
 %%   * \footnotetext outside the table for a \footnotemark in the table
 %%     is not supported.
-%%   * Vertical writing (tate) and tagged PDF are out of the scope of
-%%     this version.
+%%   * Vertical writing (tate) is out of the scope of this version.
+%%   * Tagging: the height of the table notes of a longtable is
+%%     written to the .aux file; LaTeX must be run again when it
+%%     changes, to keep them on the page of the table.
 %%   * threeparttable (threeparttablex) and tablefootnote cannot be used
 %%     with this package.
 %%
@@ -70,6 +76,11 @@
   {
     The~key~'counter'~of~tblnotes~needs~a~counter~defined~by~
     \iow_char:N\\newcounter.~'mpfootnote'~is~used~instead.
+  }
+\msg_new:nnn { tblnotes } { lt-rerun }
+  {
+    The~height~of~the~table~notes~of~longtable~#1~has~changed.\\
+    Rerun~LaTeX~to~keep~them~with~the~table.
   }
 \msg_new:nnn { tblnotes } { float-page }
   {
@@ -124,6 +135,14 @@
 \bool_new:N \l__tblnotes_float_h_bool
 %% Inside the table notes (used by the test suite)
 \bool_new:N \l__tblnotes_block_bool
+%% Tagging: the table notes of the longtable are put after it, at the
+%% place and in the width found at its end
+\bool_new:N \l__tblnotes_lt_after_bool
+\dim_new:N  \g__tblnotes_lt_dim
+\skip_new:N \g__tblnotes_lt_left_skip
+\skip_new:N \g__tblnotes_lt_right_skip
+%% and the height of the notes recorded in the .aux file
+\dim_new:N  \g__tblnotes_lt_rec_dim
 
 %% -----------------------------------------------------------------
 %% Keys
@@ -217,11 +236,42 @@
 %%    For tabular with mode=table, the table is put into a box, to put
 %%    the notes below it in its width.
 %% -----------------------------------------------------------------
+%% In a minipage and the like: \@footnotetext is \@mpfootnotetext,
+%% or with tagging (latex-lab), the plug of fntext/process is mp
+\prg_new_conditional:Npnn \__tblnotes_if_minipage: { p }
+  {
+    \cs_if_eq:NNTF \@footnotetext \@mpfootnotetext
+      { \prg_return_true: }
+      {
+        \cs_if_exist:NTF \socket_if_plug_assigned:nnTF
+          {
+            \socket_if_exist:nTF { fntext/process }
+              {
+                \socket_if_plug_assigned:nnTF { fntext/process } { mp }
+                  { \prg_return_true: }
+                  { \prg_return_false: }
+              }
+              { \prg_return_false: }
+          }
+          { \prg_return_false: }
+      }
+  }
+\prg_new_conditional:Npnn \__tblnotes_if_tagging: { p }
+  {
+    \cs_if_exist:NTF \tag_if_active:TF
+      { \tag_if_active:TF { \prg_return_true: } { \prg_return_false: } }
+      { \prg_return_false: }
+  }
 \cs_new_protected:Npn \__tblnotes_before:n #1
   {
+    \str_if_eq:nnT {#1} { longtable }
+      {
+        \bool_set:Nn \l__tblnotes_lt_after_bool
+          { \__tblnotes_if_tagging_p: }
+      }
     \bool_lazy_or:nnTF
       { \l__tblnotes_collecting_bool }
-      { \cs_if_eq_p:NN \@footnotetext \@mpfootnotetext }
+      { \__tblnotes_if_minipage_p: }
       { \tl_set:Nn \l__tblnotes_action_tl { none } }
       {
         \str_case:VnF \l__tblnotes_mode_tl
@@ -360,7 +410,11 @@
       {
         { table }
           {
-            \str_if_eq:nnF {#1} { longtable }
+            \str_if_eq:nnTF {#1} { longtable }
+              {
+                \bool_if:NT \l__tblnotes_lt_after_bool
+                  { \__tblnotes_lt_after: }
+              }
               {
                 \hbox_set_end:
                 \__tblnotes_take:
@@ -459,22 +513,23 @@
   }
 \cs_new_protected:Npn \__tblnotes_lt_notes:
   {
-    \__tblnotes_take:
-    \dim_zero:N \l__tblnotes_table_dim
-    \cs_if_exist:NT \LT@save@row
+    \__tblnotes_lt_width:
+    \bool_if:NTF \l__tblnotes_lt_after_bool
       {
-        \cs_set:Npn \LT@entry ##1##2
-          { \dim_add:Nn \l__tblnotes_table_dim {##2} }
-        \LT@save@row
+        \dim_gset_eq:NN \g__tblnotes_lt_dim \l__tblnotes_table_dim
+        \skip_gset_eq:NN \g__tblnotes_lt_left_skip \LTleft
+        \skip_gset_eq:NN \g__tblnotes_lt_right_skip \LTright
+        \__tblnotes_lt_reserve:
       }
-    \dim_compare:nNnT { \l__tblnotes_table_dim } = { \c_zero_dim }
-      { \dim_set:Nn \l__tblnotes_table_dim { \hsize } }
-    \hbox_set_to_wd:Nnn \l__tblnotes_table_box { \hsize }
       {
-        \skip_horizontal:N \LTleft
-        \__tblnotes_notes:
-        \skip_horizontal:N \LTright
+        \__tblnotes_take:
+        \__tblnotes_lt_box:NN \LTleft \LTright
+        \__tblnotes_lt_put:
       }
+  }
+%% Put \l__tblnotes_table_box below the last row, or below the last foot
+\cs_new_protected:Npn \__tblnotes_lt_put:
+  {
     \bool_lazy_and:nnTF
       { \box_if_empty_p:N \LT@foot }
       { \box_if_empty_p:N \LT@lastfoot }
@@ -484,6 +539,98 @@
         \box_use_drop:N \l__tblnotes_table_box
       }
       { \__tblnotes_lt_lastfoot: }
+  }
+%% Tagging: an empty box of the height of the notes on the previous run
+%% (in the .aux file) takes their place in the table, so that the table
+%% and the notes put after it are kept on the same page
+\cs_new_protected:Npn \__tblnotes_lt_reserve:
+  {
+    \dim_gzero:N \g__tblnotes_lt_rec_dim
+    \cs_if_exist:cT { tblnotes@lt@ \int_to_roman:n { \c@LT@tables } }
+      {
+        \dim_gset:Nn \g__tblnotes_lt_rec_dim
+          { \use:c { tblnotes@lt@ \int_to_roman:n { \c@LT@tables } } }
+      }
+    \dim_compare:nNnT { \g__tblnotes_lt_rec_dim } > { \c_zero_dim }
+      {
+        \vbox_set_to_ht:Nnn \l__tblnotes_table_box
+          { \g__tblnotes_lt_rec_dim } { \tex_vss:D }
+        \__tblnotes_lt_put:
+      }
+  }
+\cs_new_protected:Npn \__tblnotes_lt_width:
+  {
+    \dim_zero:N \l__tblnotes_table_dim
+    \cs_if_exist:NT \LT@save@row
+      {
+        \cs_set:Npn \LT@entry ##1##2
+          { \dim_add:Nn \l__tblnotes_table_dim {##2} }
+        \LT@save@row
+      }
+    \dim_compare:nNnT { \l__tblnotes_table_dim } = { \c_zero_dim }
+      { \dim_set:Nn \l__tblnotes_table_dim { \hsize } }
+  }
+\cs_new_protected:Npn \__tblnotes_lt_box:NN #1#2
+  {
+    \hbox_set_to_wd:Nnn \l__tblnotes_table_box { \hsize }
+      {
+        \skip_horizontal:N #1
+        \__tblnotes_notes:
+        \skip_horizontal:N #2
+      }
+  }
+%% Tagging: the notes inside the longtable would be tagged as a part of
+%% the table (or as an artifact, in the foot), so they are put after
+%% it (after \endlongtable, in vertical mode).  \endlongtable ends with
+%% \penalty\z@ and \addvspace\LTpost: the notes are put at the place of
+%% \LTpost, over the empty box that takes their place in the table
+%% (all three skips are discarded at a page break there).  They are
+%% set in a paragraph of their own, as those of a tabular are set in
+%% the paragraph of the table: the minipage of the notes is tagged as a
+%% part of a paragraph.  Their height is written to the .aux file.
+\cs_new_protected:Npn \__tblnotes_lt_after:
+  {
+    \__tblnotes_take:
+    \tl_if_empty:NF \l__tblnotes_notes_tl
+      {
+        \dim_set_eq:NN \l__tblnotes_table_dim \g__tblnotes_lt_dim
+        \skip_vertical:n { - \LTpost }
+        \skip_vertical:n { - \g__tblnotes_lt_rec_dim }
+        \penalty \@M
+        \group_begin:
+          \skip_zero:N \parskip
+          \nointerlineskip
+          \noindent
+          \__tblnotes_lt_box:NN
+            \g__tblnotes_lt_left_skip \g__tblnotes_lt_right_skip
+          \dim_set:Nn \l__tblnotes_width_dim
+            { \box_ht:N \l__tblnotes_table_box + \box_dp:N \l__tblnotes_table_box }
+          \box_use_drop:N \l__tblnotes_table_box
+          \par
+          \__tblnotes_lt_record:
+        \group_end:
+        \skip_vertical:N \LTpost
+      }
+  }
+%% Write the height of the notes (in \l__tblnotes_width_dim) to the
+%% .aux file, as longtable writes its column widths: in
+%% \tblnotes@lt@<number of the longtable in roman numerals>
+\cs_new_protected:Npn \__tblnotes_lt_record:
+  {
+    \legacy_if:nT { @filesw }
+      {
+        \iow_now:Ne \@auxout
+          {
+            \gdef \exp_not:c { tblnotes@lt@ \int_to_roman:n { \c@LT@tables } }
+              { \dim_use:N \l__tblnotes_width_dim }
+          }
+      }
+    \dim_compare:nNnF
+      { \l__tblnotes_width_dim } = { \g__tblnotes_lt_rec_dim }
+      {
+        \msg_warning:nne { tblnotes } { lt-rerun }
+          { \int_use:N \c@LT@tables }
+      }
   }
 \cs_new_protected:Npn \__tblnotes_lt_lastfoot:
   {

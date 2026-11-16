@@ -31,6 +31,12 @@ tblnotes.pdf: tblnotes.tex tblnotes.sty
 ##  * test-hyperref-*: no warning on a duplicate or missing destination
 ##    in the log or in the output of the engine and (x)dvipdfmx
 ##  * test-errors-*: the expected error message
+##  * test-tagging-*: tagged PDF with lualatex and pdflatex, run three
+##    times; no error, no warning of tagpdf (but the one that
+##    unicode-math is not loaded) or tblnotes, and in the structure
+##    tree (show-pdf-tags --xml) every footnotemark and footnote refer
+##    to each other (test-tagging.awk); as many of them as the
+##    TAGS-FOOTNOTES line of test-tagging.tex says
 ## A test is "<engine>:<jobname>:<input>".  The output of the engine and
 ## of (x)dvipdfmx is kept in <jobname>.term.
 ENGINES := pdflatex xelatex lualatex platex uplatex
@@ -57,6 +63,8 @@ TESTS := \
   lualatex:test-japanese-lualatex:'\input test-japanese' \
   platex:test-japanese-platex:'\def\CLS{jbook}\input test-japanese' \
   uplatex:test-japanese-uplatex:'\def\CLS{ujbook}\input test-japanese'
+
+TAGGING_ENGINES := lualatex pdflatex
 
 ## "<case>:<error message>" of test-errors.tex (pdflatex)
 ERRORS := \
@@ -100,11 +108,26 @@ test:
 	  grep -q "^! Package tblnotes Error: .*$$msg" $$job.log || \
 	    { echo "NG: no expected error in $$job.log"; exit 1; }; \
 	done; \
+	want=`sed -n 's/^%% TAGS-FOOTNOTES: *//p' test-tagging.tex`; \
+	for eng in $(TAGGING_ENGINES); do \
+	  job=test-tagging-$$eng; \
+	  echo "== $$eng $$job"; \
+	  rm -f $$job.aux; \
+	  for i in 1 2 3; do \
+	    $$eng -interaction=nonstopmode -jobname=$$job test-tagging >$$job.term 2>&1 || true; \
+	  done; \
+	  if grep -q '^!' $$job.log; then echo "NG: error in $$job.log"; exit 1; fi; \
+	  if grep 'Warning' $$job.log | grep -v 'unicode-math'; then \
+	    echo "NG: warning in $$job.log"; exit 1; fi; \
+	  show-pdf-tags --xml $$job.pdf >$$job.xml 2>>$$job.term || \
+	    { echo "NG: show-pdf-tags failed on $$job.pdf"; exit 1; }; \
+	  awk -v want=$$want -f test-tagging.awk $$job.xml || exit 1; \
+	done; \
 	echo "All tests passed ($(TNVER))"
 
 .PHONY: clean
 clean: ## Clean this repository
 	rm -rf tblnotes.zip tblnotes
 	rm -f *.aux *.log *.out *.toc *.dvi *.xdv *.synctex.gz *.term
-	rm -f test-*.pdf
+	rm -f test-*.pdf test-*.xml
 	find . -type f -name "*~" -delete

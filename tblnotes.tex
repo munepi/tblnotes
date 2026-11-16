@@ -180,6 +180,29 @@ a \cs{footnotetext} after the table for a \cs{footnotemark} in it gets
 the right anchor.  The anchors are not duplicated, since the tables are
 not typeset twice.
 
+\subsection{Tagged PDF}\label{sec:tagging}
+
+With \verb|\DocumentMetadata{tagging=on}| (Lua\LaTeX{} and
+pdf\LaTeX), the footnote marks and texts are tagged by \LaTeX{} (as
+\texttt{Lbl} and \texttt{FENote}), and each mark and its text refer
+to each other, in the table notes as well as in the page footnotes.
+\begin{itemize}
+\item The table notes of a \texttt{tabular} are tagged as a
+  \texttt{minipage} (\texttt{Div}) right after the table.
+\item The table notes of a \texttt{longtable} are put right after the
+  table (after the last foot, if any) in a paragraph of their own, at
+  the place of \cs{LTpost}: inside the table, they would be tagged as a
+  part of the table (or as an artifact, in the foot).  An empty box
+  takes their place in the table, so that the table and its notes are
+  kept on the same page, as without tagging.  Its height is that of
+  the notes on the previous run, saved in the \texttt{.aux} file, as
+  \texttt{longtable} saves its column widths: run \LaTeX{} again when
+  \pkg{tblnotes} asks for it.
+\item Inside a \texttt{minipage}, where \cs{@footnotetext} is not
+  \cs{@mpfootnotetext} with tagging, the tables are left as they are
+  as well.
+\end{itemize}
+
 \section{Errors and warnings}
 
 \begin{description}
@@ -193,6 +216,9 @@ not typeset twice.
   \key{counter} is not a counter; \texttt{mpfootnote} is used.
 \item[\texttt{The footnotes of a table in this '<float>' are put \dots}]
   (warning) See section~\ref{sec:limitations}.
+\item[\texttt{The height of the table notes of longtable \dots}]
+  (warning, tagged PDF) Run \LaTeX{} again: see
+  section~\ref{sec:tagging}.
 \end{description}
 
 \section{Limitations}\label{sec:limitations}
@@ -216,8 +242,11 @@ not typeset twice.
   \texttt{tabulary} (which typeset the table more than once),
   \pkg{tabularray} and \pkg{nicematrix} (which have their own notes)
   are not.
-\item Vertical writing (tate) and tagged PDF (\cs{DocumentMetadata})
-  are outside the scope of this version.
+\item Vertical writing (tate) is outside the scope of this version.
+\item Tagged PDF: the height of the table notes of a
+  \texttt{longtable} is saved in the \texttt{.aux} file; run \LaTeX{}
+  again when \pkg{tblnotes} asks for it (see
+  section~\ref{sec:tagging}).
 \end{itemize}
 
 \section{Tests}
@@ -251,6 +280,8 @@ exactly once, with its own mark and anchor, where it is expected
   \texttt{test-japanese.tex}  & Japanese classes (ltjbook, jbook,
                                 ujbook)\\
   \texttt{test-errors.tex}    & the error messages\\
+  \texttt{test-tagging.tex}   & tagged PDF: the structure tree
+                                (\texttt{show-pdf-tags})\\
   \hline
 \end{tabular}
 \end{center}

@@ -61,7 +61,8 @@ Copy `tblnotes.sty` to your local TeX tree:
 * `mode=page`: the footnote insertions in a float are lost, so the footnotes of a table in a float are put right after the float environment, in the text. If the float moves to another page, they are not on the page of the float, and the package warns (no warning for `[H]` of the float package).
 * The table notes of a `longtable` are put below the last row (below the last foot, if any), as a single block that is not broken across pages.
 * By default the notes are set in the width of the table (the width of its box, including the `\tabcolsep` at both ends unless `@{}` removes it): those of a very narrow table are narrow, too; give `width` for them.
-* `tabularx`, `xltabular`, `tabulary`, tabularray and nicematrix are not supported. Vertical writing (tate) and tagged PDF are outside the scope of this version.
+* `tabularx`, `xltabular`, `tabulary`, tabularray and nicematrix are not supported. Vertical writing (tate) is outside the scope of this version.
+* Tagged PDF (`\DocumentMetadata{tagging=on}`, LuaLaTeX and pdfLaTeX): the footnote marks and texts are tagged by LaTeX (`Lbl` and `FENote`) and refer to each other, in the table notes, too. The table notes of a `longtable` are put right after the table (after the last foot, if any), outside the structure of the table, over an empty box that takes their place in the table, to keep them on the page of the table; its height is that of the notes on the previous run, saved in the `.aux` file (tblnotes warns when LaTeX must be run again).
 
 ## Testing
 
@@ -71,6 +72,7 @@ Copy `tblnotes.sty` to your local TeX tree:
 * `test-hyperref-*`: no warning on a duplicate or missing destination in the log or in the output of the engine and (x)dvipdfmx.
 * `test-page-*`: exactly one tblnotes warning (a float that moves); the other tests: none.
 * `test-errors`: the expected error message.
+* `test-tagging` (run three times): no error and no warning of tagpdf or tblnotes, and in the structure tree (`show-pdf-tags --xml`), every footnote mark and footnote text refer to each other (`test-tagging.awk`).
 
 | Test | Engines | What it covers |
 |---|---|---|
@@ -81,6 +83,7 @@ Copy `tblnotes.sty` to your local TeX tree:
 | `test-hyperref.tex` | pdflatex, xelatex, lualatex, platex, uplatex | the four tests above with hyperref |
 | `test-japanese.tex` | lualatex (ltjbook), platex (jbook), uplatex (ujbook) | a Japanese document |
 | `test-errors.tex` | pdflatex | the error messages (incompatible packages, unknown counter) |
+| `test-tagging.tex` | lualatex, pdflatex | tagged PDF with hyperref: `tabular`, `tabular*`, a `minipage`, `longtable` over pages and with a last foot, both modes |
 
 `test-common.tex` holds the helpers shared by the tests.
 
